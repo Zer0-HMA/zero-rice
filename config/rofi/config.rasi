@@ -1,0 +1,14 @@
+configuration {
+    modi: "drun,run,filebrowser";
+    show-icons: true;
+    icon-theme: "Papirus-Dark";
+    terminal: "kitty";
+    drun-display-format: "{name}";
+    display-drun: "  Apps";
+    display-run: "  Comandos";
+    display-filebrowser: "  Archivos";
+    hover-select: true;
+    me-select-entry: "";
+    me-accept-entry: "MousePrimary";
+}
+@theme "lanzador"

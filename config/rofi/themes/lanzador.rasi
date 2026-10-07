@@ -1,0 +1,113 @@
+/* ═══════════ Lanzador "zero" ═══════════
+   Los colores vienen de colores.rasi (lo genera paleta.sh; se importa al final).
+   El panel izquierdo es una imagen que dibuja panel.sh al abrir. */
+* {
+    font: "JetBrainsMono Nerd Font 11";
+    background-color: transparent;
+    text-color: @fg;
+}
+
+window {
+    width: 1000px;
+    height: 560px;
+    border: 2px;
+    border-color: @acento;
+    border-radius: 22px;
+    background-color: @bg;
+    padding: 0px;
+}
+
+mainbox {
+    orientation: horizontal;
+    spacing: 0px;
+    children: [ imagebox, listbox ];
+}
+
+/* ── Panel izquierdo: lo dibuja panel.sh (fondo + saludo + reloj + clima + estadísticas) ── */
+imagebox {
+    expand: false;
+    width: 300px;
+    border-radius: 20px 0px 0px 20px;
+    background-image: @degradado;
+    children: [ dummy ];
+}
+
+/* ── Panel derecho ── */
+listbox {
+    orientation: vertical;
+    padding: 22px;
+    spacing: 16px;
+    children: [ inputbar, mode-switcher, listview ];
+}
+
+inputbar {
+    children: [ textbox-lupa, entry ];
+    spacing: 6px;
+    padding: 13px 16px;
+    border-radius: 14px;
+    background-color: @bg-alt;
+}
+textbox-lupa { expand: false; str: " "; text-color: @acento; vertical-align: 0.5; }
+entry {
+    placeholder: "Buscar...";
+    placeholder-color: @fg-dim;
+    cursor: text;
+}
+
+mode-switcher { spacing: 10px; }
+button {
+    padding: 9px;
+    border-radius: 12px;
+    background-color: @bg-alt;
+    text-color: @fg-dim;
+    cursor: pointer;
+}
+button selected {
+    background-color: @acento;
+    text-color: @sobre;
+}
+
+listview {
+    columns: 4;
+    lines: 3;
+    spacing: 10px;
+    fixed-height: true;
+    fixed-columns: true;
+    scrollbar: false;
+    cursor: "default";
+}
+
+element {
+    orientation: vertical;
+    padding: 16px 8px 12px 8px;
+    spacing: 10px;
+    border-radius: 16px;
+    cursor: pointer;
+}
+element normal.normal,
+element alternate.normal { background-color: transparent; text-color: @fg; }
+element selected.normal {
+    background-color: @bg-alt;
+    border: 2px;
+    border-color: @acento;
+    text-color: @fg;
+}
+element-icon {
+    size: 52px;
+    horizontal-align: 0.5;
+    cursor: inherit;
+}
+element-text {
+    horizontal-align: 0.5;
+    vertical-align: 0.5;
+    text-color: inherit;
+    cursor: inherit;
+    font: "JetBrainsMono Nerd Font 10";
+}
+
+/* Mensajes (ej. "no hay resultados") */
+message { padding: 10px 14px; border-radius: 12px; background-color: @bg-alt; }
+textbox { text-color: @fg; }
+
+/* Colores de tu paleta (va al final a propósito: así lo lee bien rofi) */
+@import "colores.rasi"

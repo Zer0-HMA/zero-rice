@@ -1,0 +1,141 @@
+/* Barra v2 — la forma. Los colores (@fondo, @acento...) vienen de colores.css */
+
+window.barra {
+  background: transparent;
+  font-family: "JetBrainsMono Nerd Font", monospace;
+  font-size: 13px;
+  font-weight: bold;
+  color: @texto;
+}
+.contenedor { margin: 8px 12px 0 12px; }
+
+/* Quitar estilo de botón por defecto */
+.barra button,
+.barra menubutton > button {
+  background: none;
+  border: none;
+  box-shadow: none;
+  outline: none;
+  padding: 0;
+  min-height: 0;
+  min-width: 0;
+  color: inherit;
+}
+
+/* Islas */
+.barra .modulo {
+  background-color: alpha(@fondo, 0.82);
+  border: 1px solid alpha(@acento, 0.30);
+  border-radius: 12px;
+  padding: 4px 14px;
+  min-height: 26px;
+  transition: all 250ms ease;
+}
+.barra menubutton.modulo > button { padding: 0; }
+.barra .icono { color: @acento; }
+
+.barra .lanzador { color: @acento; font-size: 18px; padding: 2px 14px; }
+.barra .lanzador:hover { color: @texto; }
+
+/* Usuario */
+.barra .usuario { color: @texto; }
+.barra .usuario.es-root {
+  background-color: #fefefe;
+  border-color: #d1d1d3;
+  color: #1c1c1e;
+}
+.barra .usuario.es-root .icono { color: #1c1c1e; }
+
+/* Workspaces */
+.barra .workspaces { padding: 4px 6px; }
+.barra .workspaces button {
+  color: alpha(@tenue, 0.55);
+  min-width: 26px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  transition: all 200ms ease;
+}
+.barra .workspaces button.ocupado { color: @texto; }
+.barra .workspaces button:hover { color: @texto; background-color: @fondo2; }
+.barra .workspaces button.activo {
+  color: @sobre;
+  min-width: 42px;
+  background-image: linear-gradient(to right, @acento, @acento2);
+}
+
+.barra .titulo { color: @tenue; padding: 0 6px; }
+
+/* Música */
+.barra .musica .cancion { color: @texto; }
+.barra .musica .control { color: @tenue; padding: 0 2px; }
+.barra .musica .control:hover { color: @acento; }
+
+/* Módulos de info */
+.barra .red     { color: @texto; }
+.barra .sistema { color: @acento; }
+.barra .sistema .caliente { color: #f87171; }
+.barra .volumen { color: @acento; }
+.barra .bateria { color: @texto; }
+.barra .bateria.baja { color: #f87171; }
+.barra .bandeja { padding: 4px 10px; }
+
+.barra .boton, .barra .energia { font-size: 15px; color: @texto; }
+.barra .boton:hover { color: @acento; }
+.barra .energia:hover { color: #f87171; }
+
+/* ══════ MODO ROOT: toda la barra en blanco puro ══════ */
+.barra.modo-root .modulo {
+  background-color: rgba(254, 254, 254, 0.94);
+  border-color: #d1d1d3;
+  color: #1c1c1e;
+}
+.barra.modo-root .modulo label,
+.barra.modo-root .modulo image,
+.barra.modo-root .modulo .icono { color: #1c1c1e; }
+.barra.modo-root .workspaces button { color: #8e8e93; }
+.barra.modo-root .workspaces button.ocupado label { color: #1c1c1e; }
+.barra.modo-root .workspaces button.activo {
+  background-image: none;
+  background-color: #1c1c1e;
+}
+.barra.modo-root .workspaces button.activo label { color: #fefefe; }
+.barra.modo-root .workspaces button:hover { background-color: #e2e2e4; }
+
+/* Popovers */
+popover > contents {
+  background-color: alpha(@fondo, 0.96);
+  border: 1px solid alpha(@acento, 0.5);
+  border-radius: 14px;
+  padding: 10px;
+  color: @texto;
+}
+popover > arrow { background-color: alpha(@fondo, 0.96); }
+
+.pop-volumen scale trough { background-color: @fondo2; border-radius: 8px; min-height: 6px; }
+.pop-volumen scale highlight { background-image: linear-gradient(to right, @acento, @acento2); border-radius: 8px; }
+.pop-volumen scale slider { background-color: @texto; border-radius: 50%; min-width: 14px; min-height: 14px; box-shadow: none; }
+
+.pop-energia { min-width: 220px; }
+.pop-energia .opcion {
+  background: none;
+  border: none;
+  box-shadow: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: @texto;
+  transition: all 150ms ease;
+}
+.pop-energia .opcion:hover { background-color: @fondo2; }
+.pop-energia .opcion .icono { color: @acento; min-width: 18px; }
+.pop-energia .opcion.confirmar { background-color: #f87171; color: #1c1c1e; }
+.pop-energia .opcion.confirmar .icono { color: #1c1c1e; }
+
+calendar { background: transparent; border: none; color: @texto; }
+calendar > grid > label.today { background-image: linear-gradient(to right, @acento, @acento2); color: @sobre; border-radius: 8px; }
+
+tooltip {
+  background-color: alpha(@fondo, 0.96);
+  border: 1px solid @acento;
+  border-radius: 10px;
+  color: @texto;
+}

@@ -1,0 +1,5 @@
+# respaldos y archivos temporales
+*.respaldo
+*.tmp
+*~
+.DS_Store

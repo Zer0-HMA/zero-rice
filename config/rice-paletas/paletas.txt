@@ -1,0 +1,26 @@
+# ═══════════════ Tus paletas de colores ═══════════════
+# Para agregar una nueva, copia una línea y cambia los colores.
+# Formato (separado por | ):
+#   id | Nombre | descripción | colores que se muestran en el menú |
+#   fondo | fondo2 | texto-tenue | texto | acento | acento2 | texto-sobre-acento | borde-inactivo
+#
+#   fondo      → islas de la barra, menús, notificaciones (si es claro, todo se vuelve tema claro)
+#   fondo2     → hover, buscador de rofi
+#   acento     → bordes de ventanas, iconos, workspace activo
+#   acento2    → segundo color de los degradados
+#   texto-sobre-acento → el texto encima del workspace activo
+
+acero|Acero|azul acero con negro profundo|#d1dbe4,#a3b7ca,#7593af,#476f95,#000000|#05080b|#16212c|#7593af|#d1dbe4|#a3b7ca|#476f95|#05080b|#16212c
+carbon|Carbón|negros y grises, modo sigilo|#2d2c31,#232324,#1d1d19,#121817,#040708|#040708|#232324|#6c6c72|#c9c9cd|#9a9aa1|#2d2c31|#040708|#1d1d19
+nieve|Nieve|blanco puro y cálido, minimalista|#d1d1d3,#e1dbd6,#e2e2e4,#f9f6f2,#fefefe|#f9f6f2|#e2e2e4|#8e8b88|#2b2a29|#3a3a3c|#a8a29c|#fefefe|#d1d1d3
+niebla|Niebla|tema claro, azul grisáceo|#406682,#607e96,#7f96aa,#9eafbf,#bec9d4,#dee4e9|#dee4e9|#bec9d4|#607e96|#2a4357|#406682|#7f96aa|#f4f7f9|#9eafbf
+vino|Vino|carmesí con azul marino|#39546a,#384a5c,#b60033,#98062d,#800022,#57000d|#11171e|#384a5c|#7f93a6|#efe2e6|#b60033|#57000d|#fbeef1|#1f2b36
+lavanda|Lavanda|lilas suaves y apagados|#af92b5,#8b7991,#6f597a,#624b6e,#503d5c|#211a27|#503d5c|#8b7991|#ece2f0|#af92b5|#6f597a|#1a141f|#3a2d44
+orquidea|Orquídea|del negro al lila brillante|#130e14,#392b3f,#604869,#876494,#ad81be,#d49ee9|#130e14|#392b3f|#876494|#f2e4f8|#d49ee9|#876494|#130e14|#2a1f2e
+neon|Neón|el original: cyan y rosa|#0b0b12,#1a1a28,#22d3ee,#a78bfa,#ec4899|#0b0b12|#1a1a28|#8a8aa3|#e6e6f0|#22d3ee|#ec4899|#0b0b12|#2a2a3a
+mono|Monocromático|grises plateados|#0d0e0e,#353839,#5d6263,#848b8e,#acb5b8,#d3dfe3|#0d0e0e|#353839|#848b8e|#d3dfe3|#d3dfe3|#848b8e|#0d0e0e|#353839
+catppuccin|Catppuccin Mocha|pastel suavecito|#11111b,#313244,#cba6f7,#f5c2e7,#89b4fa,#cdd6f4|#1e1e2e|#313244|#7f849c|#cdd6f4|#cba6f7|#89b4fa|#11111b|#313244
+tokyo|Tokyo Night|azul y morado nocturno|#16161e,#24283b,#565f89,#7aa2f7,#bb9af7,#c0caf5|#1a1b26|#24283b|#737aa2|#c0caf5|#7aa2f7|#bb9af7|#16161e|#24283b
+nord|Nord|frío y nórdico|#2e3440,#3b4252,#4c566a,#5e81ac,#88c0d0,#eceff4|#2e3440|#3b4252|#8590a6|#eceff4|#88c0d0|#5e81ac|#2e3440|#3b4252
+gruvbox|Gruvbox|retro cálido, amarillo y naranja|#282828,#3c3836,#fb4934,#fe8019,#fabd2f,#ebdbb2|#282828|#3c3836|#a89984|#ebdbb2|#fabd2f|#fe8019|#282828|#3c3836
+rosepine|Rosé Pine|rosa y lila elegante|#191724,#26233a,#eb6f92,#ebbcba,#c4a7e7,#9ccfd8|#191724|#26233a|#908caa|#e0def4|#ebbcba|#c4a7e7|#191724|#26233a
