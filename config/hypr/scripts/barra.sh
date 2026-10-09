@@ -13,6 +13,10 @@ LOCK="$RUN/barra.lock"
 PARAR="$RUN/barra.parar"
 REINICIO="$RUN/barra.reinicio"
 
+# si sigue vivo un guardián de la versión anterior (usaba /tmp), se le pide que se retire
+VIEJO="/tmp/barra-$USER"
+[[ -e "$VIEJO.lock" ]] && ! flock -n "$VIEJO.lock" true 2>/dev/null && touch "$VIEJO.parar"
+
 notificar() { command -v notify-send >/dev/null 2>&1 && notify-send -a "Barra" "$@"; return 0; }
 guardian_vivo() { ! flock -n "$LOCK" true 2>/dev/null; }
 
