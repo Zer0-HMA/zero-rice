@@ -2,6 +2,21 @@
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [SemVer](https://semver.org/lang/es/).
 
+## [0.2.0] — 2026-10-09
+
+### Agregado
+- **Foto de perfil** (`Super + Shift + F` o clic en tu nombre): en la barra, el lanzador y la pantalla de bloqueo.
+- **Workspaces en 3D** (`Super + Shift + E`): 12 efectos dibujados por la barra, sin plugins.
+- **14 estilos de animaciones** (`Super + Shift + A`) con velocidad y borde girando ajustables.
+- **OSD de volumen y brillo** y **contador de notificaciones** con No molestar (clic derecho) en la barra.
+- **Modo enlazado** (`./install.sh --enlazar`): `~/.config` apunta al repo para desarrollar el rice sin copias desincronizadas.
+- El instalador detecta si tu `hyprland.lua` arranca la barra, las notificaciones o el fondo por su cuenta y ofrece desactivarlo.
+- `kernel-modules-hook`: actualizar el kernel ya no rompe nada (Wi-Fi, VPN, USB…) hasta que reinicias.
+
+### Corregido
+- El OSD de volumen sigue a la salida activa (audífonos, Bluetooth).
+- Al actualizar, un guardián de la barra de la versión anterior se retira solo en vez de pelearse con el nuevo.
+
 ## [0.1.0] — 2026-10-09
 
 ### Agregado

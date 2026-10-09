@@ -21,6 +21,9 @@ jobs:
           sudo apt-get install -y -qq lua5.4 >/dev/null
           luac5.4 -p config/hypr/rice.lua
 
+      - name: Sintaxis de la barra (TypeScript)
+        run: npx --yes esbuild@0.24.0 config/ags/*.tsx config/ags/*.ts --loader:.tsx=tsx --jsx=preserve --log-level=error --outdir=/tmp/revision
+
       - name: JSON de SwayNC
         run: jq empty config/swaync/config.json
 

@@ -1,8 +1,8 @@
 // Barra v2 para AGS v3 (GTK4) — zr0_humber_
-// Los colores salen de colores.css (lo genera paleta.sh y la barra lo recarga sola al cambiar);
-// la forma, de style.css
+// Los colores salen de colores.css (paleta.sh lo reescribe y la barra se repinta sola, sin reiniciarse)
 import app from "ags/gtk4/app"
 import GLib from "gi://GLib"
+import Gio from "gi://Gio"
 import Pango from "gi://Pango"
 import Astal from "gi://Astal?version=4.0"
 import Gtk from "gi://Gtk?version=4.0"
@@ -16,6 +16,7 @@ import { For, With, This, createBinding, createComputed, createState, onCleanup 
 import { createPoll } from "ags/time"
 import { execAsync, subprocess } from "ags/process"
 import { readFile, monitorFile } from "ags/file"
+import { CapaWs3D, cambiarWorkspace, atenderPedido } from "./ws3d"
 import estilo from "./style.css"
 
 // ── Iconos (JetBrainsMono Nerd Font) ──
@@ -34,6 +35,7 @@ const ICO = {
   sig: "\uF051",
   paleta: "\u{F03D8}",
   campana: "\uF0F3",
+  campanaOff: "\uF1F6",
   power: "\uF011",
   candado: "\uF023",
   luna: "\uF186",
@@ -41,6 +43,7 @@ const ICO = {
   reiniciar: "\uF01E",
 }
 
+const HOME = GLib.get_home_dir()
 const CFG = GLib.get_user_config_dir()
 const SCRIPTS = `${CFG}/hypr/scripts`
 const USUARIO = GLib.get_user_name()
@@ -80,8 +83,9 @@ function vigilarColores() {
   })
 }
 
-// Hyprland con config en Lua usa dispatchers de Lua (el "dispatch workspace 3" viejo ya no jala)
-const irAWorkspace = (id: number) => run(["hyprctl", "dispatch", `hl.dsp.focus({ workspace = ${id} })`])
+
+// Pasa por ws3d.tsx: si elegiste un efecto 3D (Super + Shift + E) lo dibuja; si no, cambia normal
+const irAWorkspace = (id: number) => cambiarWorkspace(`${id}`)
 
 // ── ¿Hay un shell de root en la ventana enfocada? ──
 // Busca procesos bash/zsh/fish/sh de root que cuelguen de la ventana activa (ej: después de "su" o "sudo -i")
@@ -152,7 +156,44 @@ function Lanzador() {
   )
 }
 
-// ── Usuario (se pone blanco cuando eres root) ──
+// ── Usuario: foto de perfil y nombre (se pone blanco cuando eres root) ──
+// La foto y el nombre los cambia perfil.sh (Super + Shift + F o clic aquí); la barra se entera sola.
+const PERFIL = `${HOME}/.config/rice-perfil`
+const AVATAR = `${PERFIL}/avatar.png`
+
+function leerAvatar(): Gdk.Texture | null {
+  try {
+    return GLib.file_test(AVATAR, GLib.FileTest.EXISTS) ? Gdk.Texture.new_from_filename(AVATAR) : null
+  } catch {
+    return null
+  }
+}
+function leerNombre(): string {
+  try {
+    return readFile(`${PERFIL}/nombre`).split("\n")[0].trim() || USUARIO
+  } catch {
+    return USUARIO
+  }
+}
+
+const [avatar, setAvatar] = createState<Gdk.Texture | null>(leerAvatar())
+const [nombre, setNombre] = createState(leerNombre())
+let monitorPerfil: Gio.FileMonitor | null = null
+let perfilTimer: ReturnType<typeof setTimeout> | null = null
+
+function vigilarPerfil() {
+  GLib.mkdir_with_parents(PERFIL, 0o755)
+  monitorPerfil = monitorFile(PERFIL, () => {
+    // llegan varios avisos por cambio; se espera a que terminen
+    if (perfilTimer) clearTimeout(perfilTimer)
+    perfilTimer = setTimeout(() => {
+      perfilTimer = null
+      setAvatar(leerAvatar())
+      setNombre(leerNombre())
+    }, 250)
+  })
+}
+
 function leerUptime(): string {
   const seg = Math.floor(Number(readFile("/proc/uptime").split(" ")[0]))
   const h = Math.floor(seg / 3600)
@@ -162,14 +203,28 @@ function leerUptime(): string {
 
 function Usuario() {
   const uptime = createPoll("", 60000, leerUptime)
+  const conFoto = createComputed(() => !esRoot() && avatar() !== null)
+  const clases = createComputed(() => {
+    const c = ["modulo", "usuario"]
+    if (esRoot()) c.push("es-root")
+    if (conFoto()) c.push("con-foto")
+    return c.join(" ")
+  })
+
   return (
     <box
-      class={esRoot.as((r) => (r ? "modulo usuario es-root" : "modulo usuario"))}
+      class={clases}
       spacing={8}
-      tooltipText={uptime.as((u) => `${USUARIO}@${HOST}\nEncendida hace ${u}`)}
+      tooltipText={uptime.as((u) => `${USUARIO}@${HOST}\nEncendida hace ${u}\nClic: foto de perfil y nombre`)}
     >
-      <label class="icono" label={esRoot.as((r) => (r ? ICO.root : ICO.usuario))} />
-      <label label={esRoot.as((r) => (r ? "root" : USUARIO))} />
+      <Gtk.GestureClick onPressed={() => run([`${SCRIPTS}/perfil.sh`, "menu"])} />
+      <image class="avatar" visible={conFoto} paintable={avatar} pixelSize={22} />
+      <label class="icono" visible={conFoto.as((c) => !c)} label={esRoot.as((r) => (r ? ICO.root : ICO.usuario))} />
+      <label
+        maxWidthChars={16}
+        ellipsize={Pango.EllipsizeMode.END}
+        label={createComputed(() => (esRoot() ? "root" : nombre()))}
+      />
     </box>
   )
 }
@@ -189,7 +244,7 @@ function Workspaces() {
       <Gtk.EventControllerScroll
         flags={Gtk.EventControllerScrollFlags.VERTICAL}
         onScroll={(_c, _dx, dy) => {
-          run(["hyprctl", "dispatch", `hl.dsp.focus({ workspace = "${dy > 0 ? "e+1" : "e-1"}" })`])
+          cambiarWorkspace(dy > 0 ? "e+1" : "e-1")
           return true
         }}
       />
@@ -569,10 +624,73 @@ function Paletas() {
   )
 }
 
+// ── Notificaciones: contador en vivo y No molestar ──
+// Escucha a swaync (swaync-client -swb avisa cada cambio), así que no hace polling.
+type EstadoNotis = { cuantas: number; dnd: boolean }
+const [notis, setNotis] = createState<EstadoNotis>({ cuantas: 0, dnd: false })
+
+function escucharNotis(): () => void {
+  if (!GLib.find_program_in_path("swaync-client")) return () => {}
+  let proc: ReturnType<typeof subprocess> | null = null
+  let vivo = true
+
+  const arrancar = () => {
+    if (!vivo) return
+    try {
+      proc = subprocess(
+        ["swaync-client", "-swb"],
+        (linea) => {
+          try {
+            const j = JSON.parse(linea)
+            setNotis({ cuantas: Number(j.text) || 0, dnd: String(j.alt ?? "").includes("dnd") })
+          } catch {
+            // línea que no es JSON: se ignora
+          }
+        },
+        () => {},
+      )
+      // si swaync se reinicia o todavía no arrancaba, se vuelve a conectar solo
+      proc.connect("exit", () => {
+        proc = null
+        if (vivo) setTimeout(arrancar, 3000)
+      })
+    } catch {
+      if (vivo) setTimeout(arrancar, 10000)
+    }
+  }
+
+  arrancar()
+  return () => {
+    vivo = false
+    proc?.kill()
+  }
+}
+
 function Notis() {
+  const clases = notis.as((n) => {
+    const c = ["modulo", "boton", "notis"]
+    if (n.cuantas > 0) c.push("hay")
+    if (n.dnd) c.push("dnd")
+    return c.join(" ")
+  })
+  const tooltip = notis.as((n) => {
+    const cuantas = n.cuantas === 0 ? "Sin notificaciones" : n.cuantas === 1 ? "1 notificación" : `${n.cuantas} notificaciones`
+    return [cuantas, n.dnd ? "No molestar: activado" : "", "Clic: abrir el centro", "Clic derecho: No molestar"]
+      .filter(Boolean)
+      .join("\n")
+  })
+
   return (
-    <button class="modulo boton" tooltipText="Notificaciones" onClicked={() => run(["swaync-client", "-t", "-sw"])}>
-      <label label={ICO.campana} />
+    <button class={clases} tooltipText={tooltip} onClicked={() => run(["swaync-client", "-t", "-sw"])}>
+      <Gtk.GestureClick button={3} onPressed={() => run(["swaync-client", "-d", "-sw"])} />
+      <box spacing={7}>
+        <label label={notis.as((n) => (n.dnd ? ICO.campanaOff : ICO.campana))} />
+        <label
+          class="contador"
+          visible={notis.as((n) => n.cuantas > 0)}
+          label={notis.as((n) => (n.cuantas > 99 ? "99+" : `${n.cuantas}`))}
+        />
+      </box>
     </button>
   )
 }
@@ -616,6 +734,137 @@ function Energia() {
         </box>
       </popover>
     </menubutton>
+  )
+}
+
+// ── OSD de volumen y brillo ──
+// No necesita atajos propios: reacciona a cualquier cambio (teclas, rueda en la barra, pavucontrol...).
+type DatoOSD = { icono: string; valor: number; texto: string; apagado: boolean }
+const [osd, setOsd] = createState<DatoOSD>({ icono: "audio-volume-high-symbolic", valor: 0, texto: "", apagado: false })
+const [osdVisible, setOsdVisible] = createState(false)
+let osdTimer: ReturnType<typeof setTimeout> | null = null
+let osdListo = false // mientras la barra arranca no se muestra nada
+
+function mostrarOSD(d: DatoOSD) {
+  if (!osdListo) return
+  setOsd(d)
+  setOsdVisible(true)
+  if (osdTimer) clearTimeout(osdTimer)
+  osdTimer = setTimeout(() => {
+    osdTimer = null
+    setOsdVisible(false)
+  }, 1500)
+}
+
+function vigilarVolumen() {
+  const wp = AstalWp.get_default()
+  if (!wp) return
+  // se reconecta cuando cambias de salida (audífonos, Bluetooth), igual que el módulo de volumen
+  let actual: AstalWp.Endpoint | null = null
+  let ids: number[] = []
+  const conectarBocina = () => {
+    const anterior = actual
+    if (anterior) ids.forEach((id) => anterior.disconnect(id))
+    ids = []
+    actual = wp.defaultSpeaker
+    const bocina = actual
+    if (!bocina) return
+    const verBocina = () =>
+      mostrarOSD({
+        icono: bocina.volumeIcon,
+        valor: bocina.mute ? 0 : Math.min(1, bocina.volume),
+        texto: bocina.mute ? "Silencio" : `${Math.round(bocina.volume * 100)}%`,
+        apagado: bocina.mute,
+      })
+    ids = [bocina.connect("notify::volume", verBocina), bocina.connect("notify::mute", verBocina)]
+  }
+  conectarBocina()
+  wp.connect("notify::default-speaker", conectarBocina)
+
+  const mic = wp.defaultMicrophone
+  if (mic) {
+    mic.connect("notify::mute", () =>
+      mostrarOSD({
+        icono: mic.mute ? "microphone-sensitivity-muted-symbolic" : "audio-input-microphone-symbolic",
+        valor: mic.mute ? 0 : Math.min(1, mic.volume),
+        texto: mic.mute ? "Mic apagado" : "Mic activo",
+        apagado: mic.mute,
+      }),
+    )
+  }
+}
+
+const monitoresBrillo: Gio.FileMonitor[] = [] // se guardan para que no se los lleve el recolector de basura
+
+function vigilarBrillo() {
+  const base = "/sys/class/backlight"
+  const pantallas: string[] = []
+  try {
+    const lista = Gio.File.new_for_path(base).enumerate_children("standard::name", Gio.FileQueryInfoFlags.NONE, null)
+    let info: Gio.FileInfo | null
+    while ((info = lista.next_file(null))) pantallas.push(info.get_name())
+  } catch {
+    return // PC de escritorio: no hay brillo que mostrar
+  }
+
+  for (const nombre of pantallas) {
+    const dir = `${base}/${nombre}`
+    const leer = () => {
+      try {
+        const max = Number(readFile(`${dir}/max_brightness`)) || 1
+        return Math.round((Number(readFile(`${dir}/brightness`)) / max) * 100)
+      } catch {
+        return -1
+      }
+    }
+    let ultimo = leer()
+    monitoresBrillo.push(
+      monitorFile(`${dir}/brightness`, () => {
+        const v = leer()
+        if (v < 0 || v === ultimo) return
+        ultimo = v
+        mostrarOSD({ icono: "display-brightness-symbolic", valor: v / 100, texto: `${v}%`, apagado: false })
+      }),
+    )
+  }
+}
+
+function OSD({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
+  let win: Astal.Window
+  onCleanup(() => win.destroy())
+
+  // solo aparece en el monitor donde estás trabajando
+  const aqui = createBinding(hypr, "focusedMonitor").as((m) => !m || m.name === gdkmonitor.connector)
+  const visible = createComputed(() => osdVisible() && aqui())
+
+  return (
+    <window
+      $={(self) => (win = self)}
+      visible={visible}
+      namespace="osd-zero"
+      name={`osd-${gdkmonitor.connector}`}
+      class="osd"
+      gdkmonitor={gdkmonitor}
+      layer={Astal.Layer.OVERLAY}
+      exclusivity={Astal.Exclusivity.IGNORE}
+      keymode={Astal.Keymode.NONE}
+      anchor={Astal.WindowAnchor.BOTTOM}
+      marginBottom={110}
+      application={app}
+    >
+      <box class={osd.as((d) => (d.apagado ? "osd-caja apagado" : "osd-caja"))} spacing={14}>
+        <image iconName={osd.as((d) => d.icono)} pixelSize={20} />
+        <levelbar
+          $={(self) => ["low", "high", "full"].forEach((o) => self.remove_offset_value(o))}
+          valign={Gtk.Align.CENTER}
+          widthRequest={200}
+          minValue={0}
+          maxValue={1}
+          value={osd.as((d) => d.valor)}
+        />
+        <label class="osd-texto" widthChars={4} xalign={1} label={osd.as((d) => d.texto)} />
+      </box>
+    </window>
   )
 }
 
@@ -666,17 +915,27 @@ function Barra({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
 
 app.start({
   css: leerColores() + "\n" + estilo,
+  requestHandler: atenderPedido, // ws3d.sh → "ags request ws 3"
   gtkTheme: "Adwaita",
   main() {
     vigilarColores()
     vigilarRed()
     revisarRoot()
+    vigilarPerfil()
+    const pararNotis = escucharNotis()
+    app.connect("shutdown", pararNotis)
+    vigilarVolumen()
+    vigilarBrillo()
+    setTimeout(() => (osdListo = true), 2000)
+
     const monitores = createBinding(app, "monitors")
     return (
       <For each={monitores}>
         {(monitor) => (
           <This this={app}>
             <Barra gdkmonitor={monitor} />
+            <OSD gdkmonitor={monitor} />
+            <CapaWs3D gdkmonitor={monitor} />
           </This>
         )}
       </For>

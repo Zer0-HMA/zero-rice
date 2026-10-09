@@ -10,6 +10,7 @@
 #   ./install.sh --actualizar      baja lo último del repo y actualiza (conserva tu paleta y fondo)
 #   ./install.sh --desinstalar     quita el rice (no borra paquetes)
 #   ./install.sh --version         muestra la versión
+#   ./install.sh --enlazar         en vez de copiar, enlaza ~/.config al repo (para desarrollar el rice)
 #
 #   Paletas: acero carbon nieve niebla vino lavanda orquidea neon mono
 #            catppuccin tokyo nord gruvbox rosepine
@@ -26,6 +27,8 @@ RESPALDO="$CFG/rice-respaldo-$(date +%Y%m%d-%H%M%S)"
 VERSION=$(cat "$REPO/VERSION" 2>/dev/null || echo "?")
 
 SI=0; SOLO_CONFIGS=0; PALETA=""; MODO="instalar"
+# modo enlazado: se recuerda entre corridas (así --actualizar no lo deshace)
+ENLAZAR=$(cat "$ESTADO/modo-enlazado" 2>/dev/null || echo 0)
 for arg in "$@"; do
   case "$arg" in
     --si|-y)        SI=1 ;;
@@ -33,7 +36,9 @@ for arg in "$@"; do
     --paleta=*)     PALETA="${arg#--paleta=}" ;;
     --actualizar)   MODO="actualizar"; SOLO_CONFIGS=1 ;;
     --desinstalar)  MODO="desinstalar" ;;
-    -h|--help)      sed -n '2,16p' "$0"; exit 0 ;;
+    --enlazar)      ENLAZAR=1 ;;
+    --copiar)       ENLAZAR=0 ;;
+    -h|--help)      sed -n '2,17p' "$0"; exit 0 ;;
     -v|--version)   echo "zero-rice $VERSION"; exit 0 ;;
     *) echo "Opción desconocida: $arg (usa --help)"; exit 1 ;;
   esac
@@ -54,11 +59,21 @@ respaldar() {   # copia algo existente a la carpeta de respaldo, conservando la 
   [[ -e "$1" ]] || return 0
   local rel="${1#"$CFG"/}"
   mkdir -p "$RESPALDO/$(dirname "$rel")"
-  cp -a "$1" "$RESPALDO/$rel"
+  cp -aL "$1" "$RESPALDO/$rel" 2>/dev/null || cp -a "$1" "$RESPALDO/$rel"
 }
 instalar() {    # instalar ORIGEN(relativo a config/) DESTINO [x]
   local origen="$SRC/$1" destino="$2"
   [[ -f "$origen" ]] || { error "Falta $1 en el repo"; exit 1; }
+  if ((ENLAZAR)); then
+    [[ "${3:-}" == x && ! -x "$origen" ]] && { chmod +x "$origen" 2>/dev/null || true; }
+    # modo enlazado: ~/.config apunta al repo, así lo que edites queda directo en git
+    [[ -L "$destino" && "$(readlink -f "$destino")" == "$(readlink -f "$origen")" ]] && return 0
+    respaldar "$destino"
+    mkdir -p "$(dirname "$destino")"
+    ln -sfn "$origen" "$destino"
+    return 0
+  fi
+  [[ -L "$destino" ]] && rm -f "$destino"   # venía del modo enlazado: se vuelve copia normal
   if [[ -f "$destino" ]] && cmp -s "$origen" "$destino"; then return 0; fi
   respaldar "$destino"
   mkdir -p "$(dirname "$destino")"
@@ -97,6 +112,8 @@ desinstalar() {
   local cosas=(
     "$CFG/hypr/rice.lua" "$CFG/hypr/colores.lua" "$S/wall.sh" "$S/paleta.sh" "$S/red.sh" "$S/barra.sh"
     "$S/captura.sh" "$S/lanzador.sh" "$S/panel.sh" "$S/clima.sh" "$S/temp.sh" "$S/portapapeles.sh"
+    "$S/ws3d.sh" "$S/perfil.sh" "$S/animaciones.sh" "$CFG/hypr/animaciones.lua"
+    "$CFG/rice-ws3d" "$CFG/rice-animaciones"
     "$CFG/ags" "$CFG/rofi" "$CFG/swaync" "$CFG/kitty/paleta.conf"
     "$CFG/rice-paletas" "$CFG/rice-clima" "$CFG/rice-lanzador"
     "$CFG/gtk-3.0/zero-paleta.css" "$CFG/gtk-4.0/zero-paleta.css"
@@ -116,8 +133,9 @@ desinstalar() {
   done
   rm -rf "$ESTADO" "$CACHE"
   en_hyprland && hyprctl reload >/dev/null 2>&1 || true
+  rm -f "$ESTADO/modo-enlazado" 2>/dev/null
   ok "Rice quitado. Todo quedó respaldado en: $RESPALDO"
-  info "Tus fondos en ~/.config/wallpapers no se tocaron."
+  info "Tus fondos (~/.config/wallpapers) y tus fotos de perfil (~/.config/rice-perfil) no se tocaron."
   exit 0
 }
 
@@ -157,6 +175,8 @@ else
     thunar gvfs tumbler                                            # archivos
     hyprlock hypridle hyprpolkitagent xdg-desktop-portal-hyprland  # bloqueo, contraseñas, compartir pantalla
     cliphist                                                       # historial del portapapeles
+    kernel-modules-hook                                            # actualizar el kernel sin romper nada hasta reiniciar
+    imagemagick                                                    # fotos de perfil (webp, fotos del cel)
     base-devel git                                                 # para el AUR
   )
   if command -v rofi >/dev/null 2>&1; then   # si ya hay un rofi (ej. rofi-wayland), no lo cambiamos
@@ -205,6 +225,9 @@ else
     info "Instalando swww como respaldo para los fondos..."
     sudo pacman -S --needed --noconfirm swww || warn "No se pudo instalar swww"
   fi
+  if pacman -Q kernel-modules-hook >/dev/null 2>&1 && ! systemctl is-enabled linux-modules-cleanup >/dev/null 2>&1; then
+    sudo systemctl enable linux-modules-cleanup >/dev/null 2>&1 && ok "kernel-modules-hook activo: actualizar el kernel ya no rompe nada hasta que reinicies"
+  fi
   if ! systemctl is-enabled NetworkManager >/dev/null 2>&1; then
     warn "NetworkManager no está activado (el menú de red y la barra lo usan)."
     info "Si usas otra cosa para la red (iwd, systemd-networkd), contesta que no."
@@ -249,14 +272,15 @@ fi
 [[ -f "$CFG/hypr/rice.conf" ]] && { respaldar "$CFG/hypr/rice.conf"; rm -f "$CFG/hypr/rice.conf"; }
 ok "Hyprland → rice.lua  (tus ajustes personales van en ~/.config/hypr/mio.lua)"
 
-for s in wall paleta red barra captura lanzador panel clima temp portapapeles; do
+for s in wall paleta red barra captura lanzador panel clima temp portapapeles ws3d perfil animaciones; do
   instalar "hypr/scripts/$s.sh" "$S/$s.sh" x
 done
 ok "Scripts → ~/.config/hypr/scripts"
 
-instalar ags/app.tsx   "$CFG/ags/app.tsx"
-instalar ags/style.css "$CFG/ags/style.css"
-ok "Barra → ~/.config/ags"
+for f in app.tsx style.css ws3d.tsx efectos3d.ts; do
+  instalar "ags/$f" "$CFG/ags/$f"
+done
+ok "Barra → ~/.config/ags (con OSD, perfil y workspaces 3D)"
 
 instalar rofi/config.rasi          "$CFG/rofi/config.rasi"
 instalar rofi/themes/lanzador.rasi "$CFG/rofi/themes/lanzador.rasi"
@@ -272,14 +296,50 @@ else
   ok "Bloqueo automático → hypridle (10 min) · Super + L para bloquear"
 fi
 
+# animaciones: si nunca elegiste, se genera el estilo por defecto (Super + Shift + A para cambiarlo)
+if [[ ! -f "$CFG/hypr/animaciones.lua" ]]; then
+  "$S/animaciones.sh" regenerar >/dev/null 2>&1 && ok "Animaciones → estilo Zero (cámbialo con Super + Shift + A)"
+fi
+
+# hyprland.lua: que nada se arranque dos veces (una barra suelta choca con el guardián)
+if [[ -f "$HYPRLUA" ]]; then
+  dobles=$(grep -nE '^[[:space:]]*(hl\.exec_cmd\("(swww-daemon|awww-daemon|ags|ags run|swaync)( &)?"\)|spawn_if\("(hypridle|cliphist)")' "$HYPRLUA" || true)
+  if [[ -n "$dobles" ]]; then
+    warn "Tu hyprland.lua arranca cosas que el rice ya arranca:"
+    printf '      %s\n' "${dobles//$'\n'/$'\n      '}"
+    if preguntar "¿Las comento (no se borran, solo se desactivan)?"; then
+      respaldar "$HYPRLUA"
+      sed -i -E \
+        -e 's/^([[:space:]]*)(hl\.exec_cmd\("(swww-daemon|awww-daemon|ags|ags run|swaync)( &)?"\))/\1-- \2   -- (zero-rice ya lo arranca)/' \
+        -e 's/^([[:space:]]*)(spawn_if\("(hypridle|cliphist)".*)$/\1-- \2   -- (zero-rice ya lo arranca)/' "$HYPRLUA"
+      ok "hyprland.lua: listo, ya no se arranca nada dos veces"
+    fi
+  fi
+fi
+
 # estado y caché fuera de ~/.config (versiones viejas los guardaban ahí)
 mkdir -p "$ESTADO" "$CACHE"
+printf '%s\n' "$ENLAZAR" > "$ESTADO/modo-enlazado"
+((ENLAZAR)) && ok "Modo enlazado: ~/.config apunta a $REPO (lo que edites queda en git)"
 [[ -f "$CFG/rice-paletas/actual" && ! -f "$ESTADO/paleta" ]] && mv "$CFG/rice-paletas/actual" "$ESTADO/paleta"
 [[ -d "$CFG/rice-lanzador" ]] && rm -rf "$CFG/rice-lanzador"
 
 # paletas: agrega las nuevas sin borrar las que el usuario haya creado
 LISTA="$CFG/rice-paletas/paletas.txt"
-if [[ -f "$LISTA" ]]; then
+if ((ENLAZAR)); then
+  # las paletas que creaste se pasan al repo antes de enlazar
+  if [[ -f "$LISTA" && ! -L "$LISTA" ]]; then
+    while IFS= read -r linea; do
+      [[ -z "$linea" || "$linea" == \#* ]] && continue
+      grep -q "^${linea%%|*}|" "$SRC/rice-paletas/paletas.txt" || printf '%s\n' "$linea" >> "$SRC/rice-paletas/paletas.txt"
+    done < "$LISTA"
+  fi
+  instalar rice-paletas/paletas.txt "$LISTA"
+  ok "Paletas → enlazadas al repo"
+elif [[ -L "$LISTA" ]]; then
+  rm -f "$LISTA"; cp "$SRC/rice-paletas/paletas.txt" "$LISTA"
+  ok "Paletas → ~/.config/rice-paletas/paletas.txt"
+elif [[ -f "$LISTA" ]]; then
   nuevas=0
   while IFS= read -r linea; do
     [[ -z "$linea" || "$linea" == \#* ]] && continue
@@ -374,6 +434,8 @@ cat <<'RESUMEN'
   Super + W              elegir fondo   ·   Super + Shift + W  fondo aleatorio
   Super + N              notificaciones ·   Super + Shift + N  menú de red
   Super + L              bloquear       ·   Super + Shift + V  portapapeles
+  Super + Shift + F      foto de perfil ·   Super + Shift + A  animaciones
+  Super + Shift + E      efecto 3D de los workspaces
   Super + B              reiniciar la barra
   Impr Pant              captura de área ·  Shift/Super + Impr Pant  pantalla/ventana
 

@@ -14,6 +14,8 @@ A complete setup for **Arch Linux + Hyprland** (Lua config): an AGS bar, a Rofi 
 - **14 palettes:** Catppuccin, Tokyo Night, Nord, Gruvbox, Rosé Pine and more. Add your own in one line.
 - **Network menu:** Wi-Fi with signal bars, hidden networks, wired, Tailscale and advanced settings.
 - **Screenshots:** area, screen or window, with a preview notification and Open / Folder / Edit / Delete buttons.
+- **Profile picture** in the bar, launcher and lock screen; **volume/brightness OSD**; live **notification counter**.
+- **3D workspace transitions** (cube, carousel, door, tunnel, blinds…) and **14 animation styles**, each picked from a menu.
 - **Lock screen (hyprlock)** themed with your palette, auto-lock with hypridle, **clipboard history** (cliphist), polkit agent and desktop portal.
 
 ## Install
@@ -38,8 +40,12 @@ Requires Arch Linux (or a `pacman`-based distro) and **Hyprland 0.55+ with Lua c
 | `Super + Shift + N` | Network menu |
 | `Super + L` | Lock screen |
 | `Super + Shift + V` | Clipboard history |
+| `Super + Shift + A` / `Super + Shift + E` | Animation style / 3D workspace effect |
+| `Super + Shift + F` | Profile picture and name |
 | `Super + B` | Restart the bar |
 | `Print` / `Super + Shift + S` | Area screenshot |
+
+Hacking on the rice? `./install.sh --enlazar` symlinks `~/.config` to the repo so your edits land straight in git.
 
 Your own Hyprland settings go in `~/.config/hypr/mio.lua`, which is loaded last and never touched by the installer.
 

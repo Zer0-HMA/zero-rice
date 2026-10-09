@@ -3,3 +3,14 @@
 *.tmp
 *~
 .DS_Store
+
+# lo generan las paletas y las animaciones (en modo enlazado nunca deben llegar al repo)
+config/ags/colores.css
+config/hypr/colores.lua
+config/hypr/animaciones.lua
+config/hypr/hyprlock.conf
+config/swaync/style.css
+config/rofi/themes/colores.rasi
+config/rofi/themes/zero.rasi
+config/rofi/themes/wallpapers.rasi
+config/rofi/themes/paletas.rasi

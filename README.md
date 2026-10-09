@@ -1,7 +1,7 @@
 # ZERO — rice para Hyprland
 
 [![Revisar](https://github.com/Zer0-HMA/zero-rice/actions/workflows/revisar.yml/badge.svg)](https://github.com/Zer0-HMA/zero-rice/actions/workflows/revisar.yml)
-![Versión](https://img.shields.io/badge/versión-0.1.0-blue)
+![Versión](https://img.shields.io/badge/versión-0.2.0-blue)
 ![Arch Linux](https://img.shields.io/badge/Arch_Linux-1793D1?logo=archlinux&logoColor=white)
 ![Hyprland](https://img.shields.io/badge/Hyprland-Lua-58E1FF)
 [![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-green)](LICENSE)
@@ -15,7 +15,10 @@ Configuración completa para **Arch Linux + Hyprland** (config en Lua): barra co
 ## Qué trae
 
 - **Look de Hyprland:** bordes con degradado animado, esquinas redondeadas, blur, sombras y animaciones suaves.
-- **Barra (AGS v3):** usuario (se pone **blanca cuando eres root**), workspaces 1–5, reloj con calendario, música, red, CPU/RAM/temperatura, volumen, batería, bandeja, paletas, notificaciones y menú de energía. Tiene un guardián que la levanta sola si se cae.
+- **Barra (AGS v3):** tu **foto de perfil** y nombre (se pone **blanca cuando eres root**), workspaces 1–5, reloj con calendario, música, red, CPU/RAM/temperatura, volumen, batería, bandeja, paletas, **contador de notificaciones** con No molestar y menú de energía. Tiene un guardián que la levanta sola si se cae.
+- **OSD de volumen y brillo:** aparece en el monitor donde estás, con cualquier forma de cambiarlos (teclas, rueda, pavucontrol).
+- **Workspaces en 3D:** 12 efectos (cubo, carrusel, puerta, túnel, persianas, mosaico…) al cambiar de workspace con `Super + número` o la rueda.
+- **14 estilos de animaciones:** Elástico, Zoom, Cine, Retro, Fluido… con velocidad ajustable, desde un menú.
 - **Lanzador (Rofi):** panel con saludo según la hora, reloj, **clima de tu ciudad** y estadísticas de tu PC; apps en cuadrícula y pestañas Apps / Comandos / Archivos.
 - **14 paletas de colores:** cambian bordes, barra, lanzador, menús, notificaciones, terminal y fondo de pantalla al mismo tiempo. Puedes agregar las tuyas.
 - **Clima:** detecta tu ciudad por internet, o la eliges de una lista que se filtra mientras escribes.
@@ -54,6 +57,7 @@ El script pregunta antes de cada paso, respalda todo lo que reemplaza en `~/.con
 | `./install.sh --actualizar` | Baja lo último del repo y actualiza (conserva tu paleta, tu fondo y tu ciudad) |
 | `./install.sh --desinstalar` | Quita el rice (no borra paquetes; todo queda respaldado) |
 | `./install.sh --version` | Muestra la versión instalada |
+| `./install.sh --enlazar` | Enlaza `~/.config` al repo en vez de copiar (para desarrollar el rice) |
 
 > Puedes correrlo desde la TTY antes de entrar a Hyprland por primera vez, o desde dentro de Hyprland (se aplica en vivo).
 
@@ -63,6 +67,10 @@ El script pregunta antes de cada paso, respalda todo lo que reemplaza en `~/.con
 |---|---|
 | `Super + R` | Lanzador de apps |
 | `Super + Shift + P` | Cambiar paleta de colores |
+| `Super + Shift + A` | Elegir estilo de animaciones |
+| `Super + Shift + E` | Elegir efecto 3D de los workspaces |
+| `Super + Shift + F` | Foto de perfil y nombre (o clic en tu nombre en la barra) |
+| `Super + 1…0` / `Super + rueda` | Cambiar de workspace (con el efecto 3D que elegiste) |
 | `Super + Shift + C` | Elegir ciudad del clima |
 | `Super + W` | Elegir fondo de pantalla (con miniaturas) |
 | `Super + Shift + W` | Fondo aleatorio |
@@ -124,6 +132,22 @@ Si ya tenías tu propio `hyprlock.conf` o `hypridle.conf`, el rice no los toca.
 - **Tus fondos de pantalla** van en `~/.config/wallpapers/` (jpg, png, webp, gif). Elígelos con `Super + W`.
 - **Carpeta de capturas:** `~/Pictures/Capturas` (o la carpeta de imágenes de tu idioma). Se copian solas al portapapeles.
 
+## Perfil, animaciones y workspaces 3D
+
+**Foto de perfil:** con `Super + Shift + F` eliges una foto de tu colección o agregas una de tus Imágenes o Descargas; se recorta en círculo sola y aparece en la barra, el lanzador y la pantalla de bloqueo (`~/.face`). Desde la terminal: `perfil.sh ~/foto.jpg`, `perfil.sh nombre "Humber"`, `perfil.sh quitar`.
+
+**Animaciones:** `Super + Shift + A` abre el menú con los 14 estilos, la velocidad y el borde girando. Desde la terminal: `animaciones.sh elastico`, `animaciones.sh velocidad rapida`, `animaciones.sh probar`.
+
+**Workspaces 3D:** `Super + Shift + E` para elegir el efecto (o `Aleatorio`, o `Sin efecto 3D` para las animaciones normales de Hyprland). Funciona tomando una captura de la pantalla y animándola en una capa de la barra, así que no necesita plugins. Desde la terminal: `ws3d.sh efecto cubo`, `ws3d.sh velocidad rapida`, `ws3d.sh probar`.
+
+## Para desarrollar el rice (modo enlazado)
+
+```bash
+./install.sh --enlazar
+```
+
+En vez de copiar los archivos a `~/.config`, los **enlaza al repo**: lo que edites en `~/.config/hypr/rice.lua` o en la barra queda directo en git, listo para `git commit`. Lo que generan las paletas y las animaciones (`colores.css`, `colores.lua`, `animaciones.lua`…) se queda en `~/.config` y nunca ensucia el repo. Se recuerda entre actualizaciones; para volver a copias normales: `./install.sh --copiar`.
+
 ## Dónde se guarda cada cosa
 
 | Qué | Dónde |
@@ -131,6 +155,8 @@ Si ya tenías tu propio `hyprlock.conf` o `hypridle.conf`, el rice no los toca.
 | Configuración (lo que puedes editar) | `~/.config/hypr`, `~/.config/ags`, `~/.config/rofi`, `~/.config/rice-paletas` |
 | Tus ajustes personales | `~/.config/hypr/mio.lua` (el instalador nunca lo toca) |
 | Estado: paleta actual y tu ciudad | `~/.local/state/zero-rice` |
+| Tus fotos de perfil | `~/.config/rice-perfil` (no se borran al desinstalar) |
+| Efecto 3D y animaciones elegidas | `~/.config/rice-ws3d` y `~/.config/rice-animaciones` |
 | Caché: clima, lista de ciudades, panel del lanzador | `~/.cache/zero-rice` (se puede borrar sin problema) |
 | Logs | `$XDG_RUNTIME_DIR/zero-rice` (se borran al apagar) |
 
@@ -141,6 +167,18 @@ Para el clima, el rice consulta tu ubicación aproximada por IP a [ip-api.com](h
 ## Problemas comunes
 
 **La barra no aparece.** Corre `~/.config/hypr/scripts/barra.sh log` para ver el error. Si dice que falta algo de `Astal`, instala `yay -S libastal-meta`.
+
+**La barra se cae al iniciar sesión, o salen dos.** Revisa que tu `hyprland.lua` no arranque `ags`, `swaync` o el daemon de fondos por su cuenta: el rice ya los arranca. El instalador lo detecta y te ofrece desactivarlos.
+
+**El cursor parpadea o se ve feo en el segundo monitor (NVIDIA).** Pon esto en tu `mio.lua`:
+
+```lua
+hl.env("XCURSOR_THEME", "Bibata-Modern-Classic")
+hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Classic")
+hl.config({ cursor = { no_hardware_cursors = 1 } })
+```
+
+y instala el tema con `yay -S bibata-cursor-theme-bin`.
 
 **Sale una barra roja arriba de la pantalla.** Es un error en la config de Hyprland. Si acabas de editar `mio.lua`, revisa ese archivo.
 
@@ -162,8 +200,8 @@ zero-rice/
 │   ├── hypr/rice.lua               look, autoinicio y atajos
 │   ├── hypr/hypridle.conf          bloqueo automático
 │   ├── hypr/scripts/               barra, paleta, clima, panel, lanzador, red, captura, wall,
-│   │                               temp, portapapeles
-│   ├── ags/                        barra (app.tsx + style.css)
+│   │                               temp, portapapeles, perfil, animaciones, ws3d
+│   ├── ags/                        barra (app.tsx + style.css), workspaces 3D (ws3d.tsx + efectos3d.ts)
 │   ├── rofi/                       lanzador
 │   ├── swaync/                     notificaciones
 │   └── rice-paletas/paletas.txt    las 14 paletas

@@ -38,7 +38,21 @@ h=$((10#$(date +%H)))
 if   (( h >= 5  && h < 12 )); then saludo="Buenos días,"
 elif (( h >= 12 && h < 19 )); then saludo="Buenas tardes,"
 else                               saludo="Buenas noches,"; fi
-usuario=$(corta "$USER" 16)
+PERFIL="$CFG/rice-perfil"
+nombre=$(head -1 "$PERFIL/nombre" 2>/dev/null); nombre=${nombre:-$USER}
+usuario=$(corta "$nombre" 16)
+
+# foto de perfil (perfil.sh): se copia junto al panel porque librsvg solo lee imágenes de su carpeta
+img_avatar=""
+if [[ -f "$PERFIL/avatar.png" ]]; then
+  [[ "$PERFIL/avatar.png" -nt "$DIR/avatar.png" ]] && cp -f "$PERFIL/avatar.png" "$DIR/avatar.png"
+  tam=58; ax=$((W - 22 - tam)); ay=20; r=$((tam / 2))
+  img_avatar="<circle cx=\"$((ax + r))\" cy=\"$((ay + r))\" r=\"$((r + 3))\" fill=\"none\" stroke=\"url(#grad)\" stroke-width=\"2.5\"/>"
+  img_avatar+="<image href=\"avatar.png\" x=\"$ax\" y=\"$ay\" width=\"$tam\" height=\"$tam\"/>"
+  usuario=$(corta "$nombre" 11)    # que no se encime con la foto
+else
+  rm -f "$DIR/avatar.png"
+fi
 hora=$(date +%H:%M)
 fecha=$(date '+%A %d de %B')
 
@@ -172,6 +186,7 @@ $img_fondo
 
 <text x="24" y="42" class="saludo">$(esc "$saludo")</text>
 <text x="24" y="72" class="user">$(esc "$usuario")</text>
+$img_avatar
 
 <text x="22" y="140" class="hora">$hora</text>
 <text x="24" y="164" class="fecha">$(esc "$fecha")</text>

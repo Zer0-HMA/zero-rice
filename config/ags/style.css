@@ -140,3 +140,49 @@ tooltip {
   border-radius: 10px;
   color: @texto;
 }
+
+/* ══════ Campanita de notificaciones ══════ */
+.barra .notis.hay { color: @acento; }
+.barra .notis.dnd { color: @tenue; }
+.barra .notis .contador {
+  font-size: 11px;
+  color: @sobre;
+  background-image: linear-gradient(to right, @acento, @acento2);
+  border-radius: 8px;
+  padding: 0 6px;
+}
+.barra.modo-root .notis .contador { background-image: none; background-color: #1c1c1e; color: #fefefe; }
+
+/* ══════ OSD de volumen y brillo ══════ */
+window.osd {
+  background: transparent;
+  font-family: "JetBrainsMono Nerd Font", monospace;
+  font-size: 13px;
+  font-weight: bold;
+  color: @texto;
+}
+.osd-caja {
+  background-color: alpha(@fondo, 0.88);
+  border: 1px solid alpha(@acento, 0.45);
+  border-radius: 16px;
+  padding: 12px 18px;
+}
+.osd-caja image { color: @acento; }
+.osd levelbar trough { background-color: @fondo2; border: none; border-radius: 8px; min-height: 8px; padding: 0; }
+.osd levelbar block { border: none; border-radius: 8px; min-height: 8px; }
+.osd levelbar block.filled { background-image: linear-gradient(to right, @acento, @acento2); }
+.osd levelbar block.empty { background: transparent; }
+.osd-caja.apagado image,
+.osd-caja.apagado .osd-texto { color: @tenue; }
+.osd-caja.apagado levelbar block.filled { background-image: none; background-color: @tenue; }
+
+/* ══════ Foto de perfil ══════ */
+.barra .usuario.con-foto { padding-left: 5px; }
+.barra .usuario .avatar {
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px alpha(@acento, 0.85);
+}
+.barra .usuario:hover { border-color: alpha(@acento, 0.7); }
+
+/* ══════ Workspaces 3D (la capa la pinta ws3d.tsx) ══════ */
+window.ws3d { background: transparent; }
