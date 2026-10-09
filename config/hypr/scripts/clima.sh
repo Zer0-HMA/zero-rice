@@ -9,18 +9,28 @@
 
 shopt -u patsub_replacement 2>/dev/null
 
-DIR="$HOME/.config/rice-clima"
-UBI="$DIR/ubicacion"      # nombre|lat|lon|modo(auto/manual)
-ACTUAL="$DIR/actual"      # datos listos para el lanzador (clave=valor)
-AVISO="$DIR/.aviso"
-CIUDADES="$DIR/ciudades.tsv"   # lista offline de ciudades (GeoNames, se descarga una vez)
-PAIS="$DIR/pais"               # código de país detectado (para mostrar primero las de tu país)       # para no avisar cada 5 minutos que no hay ubicación
-LOCK="$DIR/.lock"
-TEMA="$HOME/.config/rofi/themes/zero.rasi"
+CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
+ESTADO="${XDG_STATE_HOME:-$HOME/.local/state}/zero-rice/clima"   # lo que tú elegiste (se conserva)
+CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/zero-rice/clima"          # lo que se puede volver a bajar
+UBI="$ESTADO/ubicacion"        # nombre|lat|lon|modo(auto/manual)
+PAIS="$ESTADO/pais"            # código de país detectado (para mostrar primero las de tu país)
+ACTUAL="$CACHE/actual"         # datos listos para el lanzador (clave=valor)
+AVISO="$CACHE/.aviso"          # para no avisar cada 5 minutos que no hay ubicación
+CIUDADES="$CACHE/ciudades.tsv" # lista offline de ciudades (GeoNames, se descarga una vez)
+LOCK="$CACHE/.lock"
+TEMA="$CFG/rofi/themes/zero.rasi"
 I_PIN=$'\U000f034e'; I_RADAR=$'\U000f01a4'
 CUADRO_TEXTO='window { width: 520px; } mainbox { children: [ message, inputbar ]; } message { padding: 10px 16px; border-radius: 12px; background-color: @bg-alt; } textbox { text-color: @fg; }'
 CUADRO='window { width: 560px; } mainbox { children: [ message, inputbar, listview ]; } message { padding: 10px 16px; border-radius: 12px; background-color: @bg-alt; } textbox { text-color: @fg; } listview { lines: 8; }'
-mkdir -p "$DIR"
+mkdir -p "$ESTADO" "$CACHE"
+
+# versiones viejas guardaban todo en ~/.config/rice-clima: se mueve una sola vez
+VIEJO="$CFG/rice-clima"
+if [[ -d "$VIEJO" ]]; then
+  for f in ubicacion pais; do [[ -f "$VIEJO/$f" && ! -f "$ESTADO/$f" ]] && mv "$VIEJO/$f" "$ESTADO/$f"; done
+  for f in actual ciudades.tsv; do [[ -f "$VIEJO/$f" && ! -f "$CACHE/$f" ]] && mv "$VIEJO/$f" "$CACHE/$f"; done
+  rm -rf "$VIEJO"
+fi
 
 leer_actual() {   # carga clima guardado sin ejecutar nada (nombres con espacios, acentos, etc.)
   local k v

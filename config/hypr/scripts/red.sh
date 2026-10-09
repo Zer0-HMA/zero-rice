@@ -2,11 +2,13 @@
 # red.sh — menú de red con rofi (Wi-Fi y cable), usa los colores de tu paleta
 #   red.sh            → abre el menú
 #   red.sh avanzado   → editor completo de conexiones (nmtui sin el azul feo)
+# Si tienes Tailscale instalado, también aparece para conectarlo o desconectarlo.
 
 shopt -u patsub_replacement 2>/dev/null   # que "&" en los reemplazos sea literal (bash 5.2+)
 
-TEMA="$HOME/.config/rofi/themes/zero.rasi"
-LOG="/tmp/red-$USER.log"
+TEMA="${XDG_CONFIG_HOME:-$HOME/.config}/rofi/themes/zero.rasi"
+RUN="${XDG_RUNTIME_DIR:-/tmp}/zero-rice"; mkdir -p "$RUN"
+LOG="$RUN/red.log"
 
 # ─────────── colores de la paleta actual (salen del tema de rofi) ───────────
 color() { grep -oE "$1: #[0-9a-fA-F]{6}" "$TEMA" 2>/dev/null | head -1 | cut -d' ' -f2; }
@@ -22,7 +24,7 @@ listview { lines: 10; }'
 # Iconos (Font Awesome dentro de la Nerd Font)
 I_WIFI=$'\uf1eb'; I_CABLE=$'\uf1e6'; I_POWER=$'\uf011'; I_BUSCAR=$'\uf021'
 I_AJUSTES=$'\uf013'; I_CANDADO=$'\uf023'; I_DESCONECTAR=$'\uf127'; I_BORRAR=$'\uf1f8'
-I_OK=$'\uf00c'; I_ATRAS=$'\uf060'
+I_OK=$'\uf00c'; I_ATRAS=$'\uf060'; I_ESCUDO=$'\uf132'
 
 # nm en inglés para poder leer los estados ("connected" en vez de "conectado"); el texto sigue en UTF-8
 nm() { LC_ALL='' LANGUAGE='' LC_MESSAGES=C command nmcli "$@"; }
@@ -146,9 +148,36 @@ emptyscale=,gray fullscale=,white'
     nmtui >/dev/null 2>&1
 }
 
+# ─────────── Tailscale ───────────
+ts_estado() {   # imprime: Running / Stopped / NeedsLogin / ... (nada si no está instalado o el servicio está apagado)
+  command -v tailscale >/dev/null 2>&1 || return 1
+  tailscale status --json 2>/dev/null | jq -r '.BackendState // empty' 2>/dev/null
+}
+
+ts_conectar() {
+  local err
+  notificar "Conectando Tailscale…"
+  if err=$(timeout 20 tailscale up 2>&1); then
+    notificar "Tailscale conectado" "Tu IP: $(tailscale ip -4 2>/dev/null)"
+  elif [[ "$err" == *"denied"* || "$err" == *"permission"* || "$err" == *"operator"* ]]; then
+    notificar -u critical "Tailscale necesita permiso" "Corre una vez en la terminal:  sudo tailscale set --operator=\$USER"
+  elif [[ "$err" == *"https://login.tailscale.com"* ]]; then
+    notificar -u critical "Tailscale pide iniciar sesión" "Corre en la terminal:  sudo tailscale up"
+  else
+    echo "$err" >> "$LOG"
+    notificar -u critical "No se pudo conectar Tailscale" "$err"
+  fi
+}
+
+ts_desconectar() {
+  local err
+  if err=$(tailscale down 2>&1); then notificar "Tailscale desconectado"
+  else notificar -u critical "No se pudo desconectar Tailscale" "${err:-Prueba: sudo tailscale set --operator=\$USER}"; fi
+}
+
 # ─────────── menú principal ───────────
 principal() {
-  local filas=() acciones=() radio msg="" l tipo nombre activa_wifi=""
+  local filas=() acciones=() radio msg="" l tipo nombre activa_wifi="" ts="" ts_ip=""
   local -a SSID SEG USO
 
   wifi_dev=$(nm -t -f DEVICE,TYPE dev 2>/dev/null | awk -F: '$2=="wifi"{print $1; exit}')
@@ -163,6 +192,10 @@ principal() {
       vpn|wireguard)   msg+="$I_CANDADO  VPN: <b>$(esc "$nombre")</b>\n" ;;
     esac
   done < <(nm -t -f TYPE,NAME con show --active 2>/dev/null)
+  if command -v tailscale >/dev/null 2>&1; then
+    ts=$(ts_estado)
+    [[ "$ts" == Running ]] && ts_ip=$(tailscale ip -4 2>/dev/null) && msg+="$I_ESCUDO  Tailscale: <b>$(esc "$ts_ip")</b>\n"
+  fi
   [[ -z "$msg" ]] && msg="<span foreground='$TENUE'>Sin conexión</span>"
   msg=$(printf '%b' "${msg%\\n}")
 
@@ -209,6 +242,21 @@ principal() {
     fi
   done < <(nm -t -f DEVICE,TYPE,STATE dev 2>/dev/null)
 
+  # Tailscale
+  if command -v tailscale >/dev/null 2>&1; then
+    case "$ts" in
+      Running)
+        filas+=("$I_ESCUDO   Tailscale  <span foreground='$ACENTO'>$I_OK conectado</span>  <span size='small' foreground='$TENUE'>clic para desconectar</span>")
+        acciones+=("ts-off") ;;
+      "")
+        filas+=("$I_ESCUDO   Tailscale  <span size='small' foreground='$TENUE'>(el servicio está apagado)</span>")
+        acciones+=("ts-servicio") ;;
+      *)
+        filas+=("$I_ESCUDO   Tailscale  <span foreground='$TENUE'>desconectado</span>  <span size='small' foreground='$TENUE'>clic para conectar</span>")
+        acciones+=("ts-on") ;;
+    esac
+  fi
+
   filas+=("$I_AJUSTES   Configuración avanzada"); acciones+=("avanzado")
 
   local sel
@@ -223,6 +271,9 @@ principal() {
     cable-off:*) nm dev disconnect "${acciones[sel]#*:}" >/dev/null 2>&1 && notificar "Cable desconectado" ;;
     cable-on:*)  nm dev connect "${acciones[sel]#*:}" >/dev/null 2>&1 && notificar "Cable conectado" ;;
     avanzado)  avanzado ;;
+    ts-on)     ts_conectar ;;
+    ts-off)    ts_desconectar ;;
+    ts-servicio) notificar -u critical "El servicio de Tailscale está apagado" "Actívalo con:  sudo systemctl enable --now tailscaled" ;;
     oculta)    conectar_oculta ;;
     wifi:*)
       local k=${acciones[sel]#wifi:}

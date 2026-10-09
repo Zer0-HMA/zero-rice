@@ -7,10 +7,12 @@
 #   wall.sh /ruta/img.jpg   → pone esa imagen y la copia a tu carpeta de fondos
 # Carpeta de fondos: ~/.config/wallpapers  (jpg, png, gif, webp, bmp)
 
-DIR="${WALL_DIR:-$HOME/.config/wallpapers}"
+CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
+DIR="${WALL_DIR:-$CFG/wallpapers}"
 ESTADO="$DIR/.actual"
-TEMA="$HOME/.config/rofi/themes/wallpapers.rasi"
-LOG="/tmp/wall-daemon-$USER.log"
+TEMA="$CFG/rofi/themes/wallpapers.rasi"
+RUN="${XDG_RUNTIME_DIR:-/tmp}/zero-rice"; mkdir -p "$RUN"
+LOG="$RUN/wall-daemon.log"
 TRANS=(grow outer wipe wave center)
 
 mkdir -p "$DIR"

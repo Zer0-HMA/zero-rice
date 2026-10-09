@@ -5,10 +5,13 @@
 #   barra.sh parar       → la apaga y el guardián no la revive
 #   barra.sh log         → muestra los últimos mensajes/errores de la barra
 
-LOG="/tmp/barra-$USER.log"
-LOCK="/tmp/barra-$USER.lock"
-PARAR="/tmp/barra-$USER.parar"
-REINICIO="/tmp/barra-$USER.reinicio"
+# archivos temporales en la carpeta privada de tu sesión (se borra sola al apagar)
+RUN="${XDG_RUNTIME_DIR:-/tmp}/zero-rice"
+mkdir -p "$RUN"
+LOG="$RUN/barra.log"
+LOCK="$RUN/barra.lock"
+PARAR="$RUN/barra.parar"
+REINICIO="$RUN/barra.reinicio"
 
 notificar() { command -v notify-send >/dev/null 2>&1 && notify-send -a "Barra" "$@"; return 0; }
 guardian_vivo() { ! flock -n "$LOCK" true 2>/dev/null; }
@@ -37,7 +40,7 @@ guardian() {
 
     if (( ${#caidas[@]} >= 4 )); then
       notificar -u critical "La barra se cayó varias veces seguidas" \
-        "Dejé de revivirla. Corre 'barra.sh log' en la terminal y mándale el error a Claude."
+        "Dejé de revivirla. Corre 'barra.sh log' para ver el error y repórtalo en github.com/Zer0-HMA/zero-rice/issues"
       break
     fi
     notificar "La barra se cerró sola" "Ya la volví a levantar"

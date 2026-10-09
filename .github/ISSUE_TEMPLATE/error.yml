@@ -1,0 +1,46 @@
+name: Reportar un error
+description: Algo no funciona como debería
+labels: [error]
+body:
+  - type: textarea
+    id: que-pasa
+    attributes:
+      label: ¿Qué pasa?
+      description: Qué esperabas que pasara y qué pasó en realidad.
+    validations:
+      required: true
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Pasos para que pase
+      placeholder: |
+        1. Presiono Super + Shift + P
+        2. Elijo la paleta Nord
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log de la barra (si es algo de la barra)
+      description: Lo que sale con `~/.config/hypr/scripts/barra.sh log`
+      render: text
+  - type: input
+    id: hyprland
+    attributes:
+      label: Versión de Hyprland
+      description: Lo que sale con `hyprctl version | head -1`
+    validations:
+      required: true
+  - type: input
+    id: rice
+    attributes:
+      label: Versión del rice
+      description: Lo que sale con `./install.sh --version`
+  - type: checkboxes
+    id: revise
+    attributes:
+      label: Antes de reportar
+      options:
+        - label: Revisé la sección "Problemas comunes" del README
+          required: true

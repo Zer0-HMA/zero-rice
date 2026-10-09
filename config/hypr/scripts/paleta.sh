@@ -7,16 +7,23 @@
 #   paleta.sh aleatoria   → una al azar
 # Tus paletas viven en ~/.config/rice-paletas/paletas.txt (agrega las tuyas ahí)
 
-CAMBIAR_FONDO=1   # 1 = generar un fondo que combine con la paleta · 0 = no tocar mi fondo
+CAMBIAR_FONDO=1   # 1 = fondo de la paleta solo si tu fondo actual también es de paleta (respeta el que elegiste)
+                  # 2 = siempre poner el fondo de la paleta · 0 = nunca tocar mi fondo
 TEMA_KITTY=1      # 1 = la terminal también cambia de color         · 0 = no tocar kitty
+TEMA_GTK=1        # 1 = apps GTK (Thunar, etc.) con tu paleta      · 0 = no tocar GTK
+TEMA_BLOQUEO=1    # 1 = pantalla de bloqueo (hyprlock) con tu paleta · 0 = no tocarla
 
-CFG="$HOME/.config"
+CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
 DIR="$CFG/rice-paletas"
 LISTA="$DIR/paletas.txt"
-ACTUAL="$DIR/actual"
-mkdir -p "$DIR"
+ESTADO="${XDG_STATE_HOME:-$HOME/.local/state}/zero-rice"
+CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/zero-rice"
+ACTUAL="$ESTADO/paleta"
+mkdir -p "$DIR" "$ESTADO" "$CACHE"
+# antes la paleta actual se guardaba junto a las paletas
+[[ -f "$DIR/actual" && ! -f "$ACTUAL" ]] && mv "$DIR/actual" "$ACTUAL"
 
-[[ -f "$LISTA" ]] || { echo "No existe $LISTA — corre instalar-paletas.sh" >&2; exit 1; }
+[[ -f "$LISTA" ]] || { echo "No existe $LISTA — vuelve a correr ./install.sh desde el repo" >&2; exit 1; }
 
 # ─────────── utilidades ───────────
 trim() { local s="$1"; s="${s#"${s%%[![:space:]]*}"}"; printf '%s' "${s%"${s##*[![:space:]]}"}"; }
@@ -48,8 +55,18 @@ indice_de() { local i; for i in "${!IDS[@]}"; do [[ "${IDS[i]}" == "$1" ]] && { 
 
 # ─────────── generadores de config ───────────
 escribir_hypr() {
+  mkdir -p "$CFG/hypr"
+  cat > "$CFG/hypr/colores.lua" <<EOF
+-- Generado por paleta.sh — paleta: $NOM (no lo edites: se sobrescribe al cambiar de paleta)
+return {
+    acento   = "rgba($(hex "$A")ff)",
+    acento2  = "rgba($(hex "$A2")ff)",
+    inactivo = "rgba($(hex "$INA")aa)",
+}
+EOF
+  # rice.lua de versiones viejas (con los colores adentro): se sigue parchando para no romperlo
   local rice="$CFG/hypr/rice.lua"
-  [[ -f "$rice" ]] || return 0
+  [[ -f "$rice" ]] && grep -q '^local cyan' "$rice" || return 0
   sed -i -E \
     -e "s/^(local cyan[[:space:]]*=[[:space:]]*)\"[^\"]*\"/\1\"rgba($(hex "$A")ff)\"/" \
     -e "s/^(local rosa[[:space:]]*=[[:space:]]*)\"[^\"]*\"/\1\"rgba($(hex "$A2")ff)\"/" \
@@ -141,7 +158,8 @@ EOF
 
 escribir_rofi() {
   mkdir -p "$CFG/rofi/themes"
-  local vars="    bg: $(printf '#%sf0' "$(hex "$F")"); bg-alt: $F2; fg: $TEX; fg-dim: $TEN;
+  local vars
+  vars="    bg: $(printf '#%sf0' "$(hex "$F")"); bg-alt: $F2; fg: $TEX; fg-dim: $TEN;
     acento: $A; acento2: $A2; sobre: $SO;
     background-color: transparent;
     text-color: @fg;"
@@ -276,10 +294,156 @@ EOF
   pkill -USR1 -x kitty 2>/dev/null || true   # kitty recarga su config con esta señal
 }
 
+escribir_gtk() {
+  ((TEMA_GTK)) || return 0
+  local claro=0 v d css
+  es_claro "$F" && claro=1
+  for v in 3.0 4.0; do
+    d="$CFG/gtk-$v"; mkdir -p "$d"
+    if [[ $v == 3.0 ]]; then
+      cat > "$d/zero-paleta.css" <<EOF
+/* Generado por paleta.sh — paleta: $NOM (tema Adwaita de GTK 3: Thunar, etc.) */
+@define-color theme_bg_color $F2;
+@define-color theme_fg_color $TEX;
+@define-color theme_base_color $F;
+@define-color theme_text_color $TEX;
+@define-color theme_selected_bg_color $A;
+@define-color theme_selected_fg_color $SO;
+@define-color theme_unfocused_bg_color $F2;
+@define-color theme_unfocused_fg_color $TEX;
+@define-color theme_unfocused_base_color $F;
+@define-color theme_unfocused_text_color $TEX;
+@define-color theme_unfocused_selected_bg_color $A;
+@define-color theme_unfocused_selected_fg_color $SO;
+@define-color insensitive_fg_color $TEN;
+@define-color borders $INA;
+@define-color unfocused_borders $INA;
+EOF
+    else
+      cat > "$d/zero-paleta.css" <<EOF
+/* Generado por paleta.sh — paleta: $NOM (GTK 4 / libadwaita) */
+@define-color accent_color $A;
+@define-color accent_bg_color $A;
+@define-color accent_fg_color $SO;
+@define-color window_bg_color $F;
+@define-color window_fg_color $TEX;
+@define-color view_bg_color $F;
+@define-color view_fg_color $TEX;
+@define-color headerbar_bg_color $F2;
+@define-color headerbar_fg_color $TEX;
+@define-color sidebar_bg_color $F2;
+@define-color sidebar_fg_color $TEX;
+@define-color card_bg_color $F2;
+@define-color card_fg_color $TEX;
+@define-color popover_bg_color $F2;
+@define-color popover_fg_color $TEX;
+@define-color dialog_bg_color $F2;
+@define-color dialog_fg_color $TEX;
+:root {
+  --accent-color: $A; --accent-bg-color: $A; --accent-fg-color: $SO;
+  --window-bg-color: $F; --window-fg-color: $TEX;
+  --view-bg-color: $F; --view-fg-color: $TEX;
+  --headerbar-bg-color: $F2; --headerbar-fg-color: $TEX;
+  --sidebar-bg-color: $F2; --sidebar-fg-color: $TEX;
+  --card-bg-color: $F2; --card-fg-color: $TEX;
+  --popover-bg-color: $F2; --popover-fg-color: $TEX;
+  --dialog-bg-color: $F2; --dialog-fg-color: $TEX;
+}
+EOF
+    fi
+    # se importa al principio de tu gtk.css (lo demás que tengas ahí se queda)
+    css="$d/gtk.css"
+    if ! grep -qF '@import url("zero-paleta.css");' "$css" 2>/dev/null; then
+      { echo '@import url("zero-paleta.css");'; [[ -f "$css" ]] && cat "$css"; true; } > "$css.tmp" && mv "$css.tmp" "$css"
+    fi
+  done
+  # modo oscuro/claro para las apps que lo preguntan
+  if command -v gsettings >/dev/null 2>&1; then
+    if ((claro)); then
+      gsettings set org.gnome.desktop.interface color-scheme prefer-light 2>/dev/null
+      gsettings set org.gnome.desktop.interface gtk-theme Adwaita 2>/dev/null
+    else
+      gsettings set org.gnome.desktop.interface color-scheme prefer-dark 2>/dev/null
+      gsettings set org.gnome.desktop.interface gtk-theme Adwaita-dark 2>/dev/null
+    fi
+  fi
+  return 0
+}
+
+escribir_hyprlock() {
+  ((TEMA_BLOQUEO)) || return 0
+  local conf="$CFG/hypr/hyprlock.conf"
+  # si ya tenías tu propio hyprlock.conf, no se toca
+  [[ -f "$conf" ]] && ! head -1 "$conf" | grep -q 'Generado por paleta.sh' && return 0
+  mkdir -p "$CFG/hypr"
+  cat > "$conf" <<EOF
+# Generado por paleta.sh — paleta: $NOM  (bórrale esta línea si no quieres que paleta.sh lo cambie)
+general {
+    hide_cursor = true
+    ignore_empty_input = true
+}
+
+background {
+    monitor =
+    path = screenshot
+    blur_passes = 3
+    blur_size = 8
+    brightness = 0.6
+}
+
+label {
+    monitor =
+    text = \$TIME
+    color = rgb($(hex "$TEX"))
+    font_size = 96
+    font_family = JetBrainsMono Nerd Font
+    position = 0, 170
+    halign = center
+    valign = center
+}
+
+label {
+    monitor =
+    text = cmd[update:60000] date +"%A %d de %B"
+    color = rgba($(hex "$TEX")cc)
+    font_size = 18
+    font_family = JetBrainsMono Nerd Font
+    position = 0, 80
+    halign = center
+    valign = center
+}
+
+input-field {
+    monitor =
+    size = 320, 56
+    outline_thickness = 2
+    outer_color = rgb($(hex "$A")) rgb($(hex "$A2")) 45deg
+    inner_color = rgba($(hex "$F")dd)
+    font_color = rgb($(hex "$TEX"))
+    check_color = rgb($(hex "$A2"))
+    fail_color = rgb(f87171)
+    fail_text = Contraseña incorrecta
+    placeholder_text = Contraseña…
+    fade_on_empty = false
+    dots_center = true
+    rounding = 14
+    position = 0, -40
+    halign = center
+    valign = center
+}
+EOF
+}
+
 generar_fondo() {
   ((CAMBIAR_FONDO)) || return 0
-  local W=1920 H=1080 res svg="$DIR/fondo.svg" png="$CFG/wallpapers/paleta-$ID.png"
-  res=$(hyprctl monitors 2>/dev/null | grep -oE '[0-9]+x[0-9]+@' | head -1 | tr -d '@')
+  if ((CAMBIAR_FONDO == 1)); then
+    # solo si el fondo actual es de paleta (o no hay); si tú elegiste uno, se respeta
+    local cur; cur=$(cat "$CFG/wallpapers/.actual" 2>/dev/null)
+    [[ -n "$cur" && -f "$cur" && "$(basename "$cur")" != paleta-*.png ]] && return 0
+  fi
+  local W=1920 H=1080 res svg="$CACHE/fondo.svg" png="$CFG/wallpapers/paleta-$ID.png"
+  # el monitor más grande, para que en ninguno se vea pixeleado
+  res=$(hyprctl monitors 2>/dev/null | grep -oE '[0-9]+x[0-9]+@' | tr -d '@' | sort -t x -k1,1nr | head -1)
   [[ -n "$res" ]] && { W=${res%x*}; H=${res#*x}; }
   local ya0=$((H - 200)) ya1=$((H - 200 - W * 55 / 100))
   local yb0=$((H - 40))  yb1=$((H - 40 - W * 55 / 100))
@@ -338,7 +502,8 @@ EOF
 }
 
 poner_fondo() {
-  local W; command -v awww >/dev/null 2>&1 && W=awww || W=swww
+  local W=swww
+  command -v awww >/dev/null 2>&1 && W=awww
   command -v "$W" >/dev/null 2>&1 || return 0
   "$W" query &>/dev/null || { setsid -f "$W-daemon" >/dev/null 2>&1; sleep 1; }
   "$W" img "$1" --transition-type grow --transition-fps 60 --transition-duration 1.2 || return 0
@@ -349,12 +514,14 @@ recargar() {
   [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] || return 0
   hyprctl reload >/dev/null 2>&1 || true
   swaync-client -rs >/dev/null 2>&1 || true
+  # la barra nueva ve que cambió colores.css y se repinta sola, sin reiniciarse (sin parpadeo)
+  grep -q 'monitorFile' "$CFG/ags/app.tsx" 2>/dev/null && return 0
   if [[ -x "$CFG/hypr/scripts/barra.sh" ]]; then
     "$CFG/hypr/scripts/barra.sh" reiniciar
   elif [[ -f "$CFG/ags/app.tsx" ]] && command -v ags >/dev/null 2>&1; then
     ags quit >/dev/null 2>&1 || true
     sleep 0.4
-    setsid -f ags run >"/tmp/ags-$USER.log" 2>&1
+    setsid -f ags run >/dev/null 2>&1
   fi
 }
 
@@ -367,6 +534,8 @@ aplicar() {
   escribir_rofi
   escribir_swaync
   escribir_kitty
+  escribir_gtk
+  escribir_hyprlock
   printf '%s\n' "$ID" > "$ACTUAL"
   recargar
   generar_fondo
@@ -396,7 +565,7 @@ bloques_terminal() { # franja de colores con truecolor (siempre del mismo ancho)
 }
 
 menu_rofi() {
-  local cur sel i fila marca tenue
+  local cur sel i marca tenue
   cur=$(actual_id)
   # el menú usa la paleta actual; si nunca has elegido, usa la primera
   if [[ ! -f "$CFG/rofi/themes/paletas.rasi" ]]; then
@@ -450,7 +619,7 @@ case "${1:-menu}" in
     i=$(indice_de "$(actual_id)") || i=0
     ID=${IDS[i]}; NOM=${NOMS[i]}
     read -r F F2 TEN TEX A A2 SO INA <<<"${DATA[i]}"
-    escribir_hypr; escribir_ags; escribir_swaync; escribir_rofi; escribir_kitty
+    escribir_hypr; escribir_ags; escribir_swaync; escribir_rofi; escribir_kitty; escribir_gtk; escribir_hyprlock
     printf '%s\n' "$ID" > "$ACTUAL"
     swaync-client -rs >/dev/null 2>&1 || true ;;
   colores-barra)     # solo regenera los colores de la barra con la paleta actual (lo usa el instalador)

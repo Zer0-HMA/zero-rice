@@ -1,5 +1,6 @@
 // Barra v2 para AGS v3 (GTK4) — zr0_humber_
-// Los colores salen de colores.css (lo genera paleta.sh); la forma, de style.css
+// Los colores salen de colores.css (lo genera paleta.sh y la barra lo recarga sola al cambiar);
+// la forma, de style.css
 import app from "ags/gtk4/app"
 import GLib from "gi://GLib"
 import Pango from "gi://Pango"
@@ -13,9 +14,8 @@ import AstalTray from "gi://AstalTray"
 import AstalMpris from "gi://AstalMpris"
 import { For, With, This, createBinding, createComputed, createState, onCleanup } from "ags"
 import { createPoll } from "ags/time"
-import { execAsync } from "ags/process"
-import { readFile } from "ags/file"
-import colores from "./colores.css"
+import { execAsync, subprocess } from "ags/process"
+import { readFile, monitorFile } from "ags/file"
 import estilo from "./style.css"
 
 // ── Iconos (JetBrainsMono Nerd Font) ──
@@ -41,12 +41,44 @@ const ICO = {
   reiniciar: "\uF01E",
 }
 
-const HOME = GLib.get_home_dir()
+const CFG = GLib.get_user_config_dir()
+const SCRIPTS = `${CFG}/hypr/scripts`
 const USUARIO = GLib.get_user_name()
 const HOST = GLib.get_host_name()
 
 const run = (cmd: string[]) => execAsync(cmd).catch(() => {})
 const hypr = AstalHyprland.get_default()
+
+// ── Colores ──
+// Se leen al arrancar y cada vez que paleta.sh reescribe colores.css: la barra se repinta
+// sin reiniciarse. Si el archivo no existe todavía, usa la paleta neón.
+const RUTA_COLORES = `${CFG}/ags/colores.css`
+const COLORES_DEFECTO = `
+@define-color fondo #0b0b12; @define-color fondo2 #1a1a28; @define-color tenue #8a8aa3;
+@define-color texto #e6e6f0; @define-color acento #22d3ee; @define-color acento2 #ec4899;
+@define-color sobre #0b0b12; @define-color inactivo #2a2a3a;`
+
+function leerColores(): string {
+  try {
+    const c = readFile(RUTA_COLORES)
+    return c.includes("@define-color") ? c : COLORES_DEFECTO
+  } catch {
+    return COLORES_DEFECTO
+  }
+}
+
+let monitorColores: unknown = null
+function vigilarColores() {
+  let espera: ReturnType<typeof setTimeout> | null = null
+  monitorColores = monitorFile(RUTA_COLORES, () => {
+    // paleta.sh escribe el archivo en varios pasos: esperamos a que termine
+    if (espera) clearTimeout(espera)
+    espera = setTimeout(() => {
+      espera = null
+      app.apply_css(leerColores() + "\n" + estilo, true)
+    }, 250)
+  })
+}
 
 // Hyprland con config en Lua usa dispatchers de Lua (el "dispatch workspace 3" viejo ya no jala)
 const irAWorkspace = (id: number) => run(["hyprctl", "dispatch", `hl.dsp.focus({ workspace = ${id} })`])
@@ -68,24 +100,53 @@ END {
   print 0
 }'`
 
-const esRoot =
-  USUARIO === "root"
-    ? createPoll(true, 60000, () => true)
-    : createPoll(false, 1500, async () => {
-        const pid = hypr.focusedClient?.pid
-        if (!pid) return false
-        try {
-          const out = await execAsync(["bash", "-c", SCRIPT_ROOT, "root-check", String(pid)])
-          return out.trim() === "1"
-        } catch {
-          return false
-        }
-      })
+// Antes se lanzaba bash+ps cada 1.5 s pasara lo que pasara. Ahora: al cambiar de ventana y cada 3 s,
+// y el escaneo de procesos solo se hace si la ventana enfocada es una terminal.
+const TERMINALES =
+  /^(kitty|alacritty|foot|footclient|wezterm|org\.wezfurlong\.wezterm|ghostty|com\.mitchellh\.ghostty|konsole|org\.kde\.konsole|xterm|uxterm|urxvt|st|xfce4-terminal|tilix|terminator|gnome-terminal-server|org\.gnome\.terminal|org\.gnome\.console|kgx)$/i
+
+function uidDe(pid: number): number {
+  try {
+    const m = readFile(`/proc/${pid}/status`).match(/^Uid:\s+(\d+)/m)
+    return m ? Number(m[1]) : -1
+  } catch {
+    return -1
+  }
+}
+
+const [esRoot, setEsRoot] = createState(USUARIO === "root")
+const marcarRoot = (v: boolean) => {
+  if (esRoot.get() !== v) setEsRoot(v)
+}
+let revisandoRoot = false
+
+async function revisarRoot() {
+  if (USUARIO === "root" || revisandoRoot) return
+  const cliente = hypr.focusedClient
+  if (!cliente || !cliente.pid) return marcarRoot(false)
+  const pid = cliente.pid
+  if (uidDe(pid) === 0) return marcarRoot(true)                      // la ventana misma es de root
+  if (!TERMINALES.test(cliente.class ?? "")) return marcarRoot(false) // no es terminal: no hay shell
+  revisandoRoot = true
+  try {
+    const out = await execAsync(["bash", "-c", SCRIPT_ROOT, "root-check", String(pid)])
+    marcarRoot(out.trim() === "1")
+  } catch {
+    marcarRoot(false)
+  } finally {
+    revisandoRoot = false
+  }
+}
+
+if (USUARIO !== "root") {
+  hypr.connect("notify::focused-client", () => revisarRoot())
+  setInterval(() => revisarRoot(), 3000)
+}
 
 // ── Lanzador ──
 function Lanzador() {
   return (
-    <button class="modulo lanzador" tooltipText="Aplicaciones" onClicked={() => run([`${HOME}/.config/hypr/scripts/lanzador.sh`])}>
+    <button class="modulo lanzador" tooltipText="Aplicaciones" onClicked={() => run([`${SCRIPTS}/lanzador.sh`])}>
       <label label={ICO.arch} />
     </button>
   )
@@ -172,14 +233,29 @@ function Reloj() {
 }
 
 // ── Música (aparece solo si algo está sonando: Spotify, YouTube en el navegador, etc.) ──
-function Musica() {
-  const mpris = AstalMpris.get_default()
-  const players = createBinding(mpris, "players")
+// Se muestra el reproductor que está sonando; si ninguno suena, el primero.
+const mpris = AstalMpris.get_default()
+const [reproductor, setReproductor] = createState<AstalMpris.Player | null>(null)
+const conectados = new WeakSet<AstalMpris.Player>()
 
+function elegirReproductor() {
+  const lista = mpris.players
+  for (const p of lista) {
+    if (conectados.has(p)) continue
+    conectados.add(p)
+    p.connect("notify::playback-status", elegirReproductor)
+  }
+  const nuevo = lista.find((p) => p.playbackStatus === AstalMpris.PlaybackStatus.PLAYING) ?? lista[0] ?? null
+  if (nuevo !== reproductor.get()) setReproductor(nuevo)
+}
+mpris.connect("notify::players", elegirReproductor)
+elegirReproductor()
+
+function Musica() {
   return (
-    <box class="modulo musica" visible={players.as((p) => p.length > 0)}>
-      <With value={players.as((p) => p[0])}>
-        {(p: AstalMpris.Player | undefined) => {
+    <box class="modulo musica" visible={reproductor.as((p) => p !== null)}>
+      <With value={reproductor}>
+        {(p: AstalMpris.Player | null) => {
           if (!p) return <box />
           const titulo = createBinding(p, "title")
           const artista = createBinding(p, "artist")
@@ -214,12 +290,15 @@ function Musica() {
 }
 
 // ── Red ──
-// Se lee con nmcli: la librería de red de Astal tronaba la barra al conectarse a redes ocultas
-type EstadoRed = { cable: boolean; wifi: string; senal: number }
-const SIN_RED: EstadoRed = { cable: false, wifi: "", senal: 0 }
+// Se lee con nmcli: la librería de red de Astal tronaba la barra al conectarse a redes ocultas.
+// En vez de preguntar cada 4 s, se escucha "nmcli monitor" y se actualiza solo cuando algo cambia
+// (más una revisión cada 20 s para la intensidad de la señal y Tailscale).
+type EstadoRed = { cable: boolean; wifi: string; senal: number; tailscale: string }
+const SIN_RED: EstadoRed = { cable: false, wifi: "", senal: 0, tailscale: "" }
 const nm = (...args: string[]) => execAsync(["env", "LC_ALL=", "LANGUAGE=", "LC_MESSAGES=C", "nmcli", ...args])
+const HAY_TAILSCALE = GLib.find_program_in_path("tailscale") !== null
 
-async function leerRed(): Promise<string> {
+async function leerRed(): Promise<EstadoRed> {
   const r: EstadoRed = { ...SIN_RED }
   try {
     const activas = await nm("-t", "-f", "TYPE,NAME", "con", "show", "--active")
@@ -239,7 +318,55 @@ async function leerRed(): Promise<string> {
   } catch {
     // nmcli no disponible o NetworkManager apagado: se queda "sin red"
   }
-  return JSON.stringify(r)
+  if (HAY_TAILSCALE) {
+    try {
+      const ip = (await execAsync(["tailscale", "ip", "-4"])).trim()
+      if (ip) r.tailscale = ip
+    } catch {
+      // tailscale apagado o desconectado
+    }
+  }
+  return r
+}
+
+const [red, setRed] = createState<EstadoRed>(SIN_RED)
+let leyendoRed = false
+let otraVez = false
+
+async function refrescarRed() {
+  if (leyendoRed) {
+    otraVez = true
+    return
+  }
+  leyendoRed = true
+  try {
+    const nuevo = await leerRed()
+    if (JSON.stringify(nuevo) !== JSON.stringify(red.get())) setRed(nuevo)
+  } finally {
+    leyendoRed = false
+    if (otraVez) {
+      otraVez = false
+      refrescarRed()
+    }
+  }
+}
+
+let monitorRed: unknown = null
+function vigilarRed() {
+  refrescarRed()
+  setInterval(() => refrescarRed(), 20000)
+  let espera: ReturnType<typeof setTimeout> | null = null
+  try {
+    monitorRed = subprocess(["env", "LC_ALL=", "LANGUAGE=", "LC_MESSAGES=C", "nmcli", "monitor"], () => {
+      if (espera) clearTimeout(espera)
+      espera = setTimeout(() => {
+        espera = null
+        refrescarRed()
+      }, 600)
+    })
+  } catch {
+    // sin nmcli: solo la revisión cada 20 s
+  }
 }
 
 function iconoWifi(s: number): string {
@@ -251,17 +378,16 @@ function iconoWifi(s: number): string {
 }
 
 function Red() {
-  const red = createPoll(JSON.stringify(SIN_RED), 4000, leerRed).as((j) => JSON.parse(j) as EstadoRed)
-
   return (
     <button
       class="modulo red"
-      onClicked={() => run([`${HOME}/.config/hypr/scripts/red.sh`])}
+      onClicked={() => run([`${SCRIPTS}/red.sh`])}
       tooltipText={red.as((r) =>
         [
           r.cable ? "Cable: conectado" : "",
           r.wifi ? `Wi-Fi: ${r.wifi} (${r.senal}%)` : "",
           !r.cable && !r.wifi ? "Sin conexión" : "",
+          r.tailscale ? `Tailscale: ${r.tailscale}` : "",
           "Clic: menú de red",
         ]
           .filter(Boolean)
@@ -277,6 +403,7 @@ function Red() {
           ellipsize={Pango.EllipsizeMode.END}
           label={red.as((r) => r.wifi || (r.cable ? "Cable" : "Sin red"))}
         />
+        <image class="tailscale" iconName="network-vpn-symbolic" visible={red.as((r) => !!r.tailscale)} />
       </box>
     </button>
   )
@@ -307,8 +434,9 @@ function leerRam(): number {
 
 async function leerTemp(): Promise<number> {
   try {
-    const out = await execAsync(["bash", "-c", "cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | sort -n | tail -1"])
-    return Math.round(Number(out.trim()) / 1000) || 0
+    // temp.sh busca el sensor de la CPU (coretemp / k10temp) en vez del más caliente de todos
+    const out = await execAsync([`${SCRIPTS}/temp.sh`])
+    return Number(out.trim()) || 0
   } catch {
     return 0
   }
@@ -324,12 +452,14 @@ async function leerDisco(): Promise<string> {
   }
 }
 
-function Sistema() {
-  const cpu = createPoll(0, 2000, leerCpu)
-  const ram = createPoll(0, 2000, leerRam)
-  const temp = createPoll(0, 5000, leerTemp)
-  const disco = createPoll("", 60000, leerDisco)
+// Una sola lectura para todos los monitores (antes cada barra medía la CPU por su cuenta
+// y con dos monitores los porcentajes salían mal)
+const cpu = createPoll(0, 2000, leerCpu)
+const ram = createPoll(0, 2000, leerRam)
+const temp = createPoll(0, 5000, leerTemp)
+const disco = createPoll("", 60000, leerDisco)
 
+function Sistema() {
   return (
     <box class="modulo sistema" spacing={14} tooltipText={disco}>
       <label label={cpu.as((v) => `${ICO.cpu}  ${v}%`)} />
@@ -344,10 +474,8 @@ function Sistema() {
 }
 
 // ── Volumen (rueda: subir/bajar · clic: slider) ──
-function Volumen() {
-  const wp = AstalWp.get_default()
-  if (!wp) return <box />
-  const bocina = wp.defaultSpeaker
+// Sigue a la salida predeterminada: si conectas audífonos o Bluetooth, la barra cambia con ella.
+function ControlVolumen({ bocina }: { bocina: AstalWp.Endpoint }) {
   const icono = createBinding(bocina, "volumeIcon")
   const nivel = createBinding(bocina, "volume")
 
@@ -373,6 +501,16 @@ function Volumen() {
         </box>
       </popover>
     </menubutton>
+  )
+}
+
+function Volumen() {
+  const wp = AstalWp.get_default()
+  if (!wp) return <box />
+  return (
+    <With value={createBinding(wp, "defaultSpeaker")}>
+      {(bocina: AstalWp.Endpoint | null) => (bocina ? <ControlVolumen bocina={bocina} /> : <box />)}
+    </With>
   )
 }
 
@@ -424,7 +562,7 @@ function Paletas() {
     <button
       class="modulo boton"
       tooltipText="Cambiar paleta de colores"
-      onClicked={() => run([`${HOME}/.config/hypr/scripts/paleta.sh`, "menu"])}
+      onClicked={() => run([`${SCRIPTS}/paleta.sh`, "menu"])}
     >
       <label label={ICO.paleta} />
     </button>
@@ -470,7 +608,7 @@ function Energia() {
       <label label={ICO.power} />
       <popover>
         <box class="pop-energia" orientation={Gtk.Orientation.VERTICAL} spacing={4}>
-          {opcion("bloquear", ICO.candado, "Bloquear", ["bash", "-c", "command -v hyprlock >/dev/null && hyprlock || loginctl lock-session"], false)}
+          {opcion("bloquear", ICO.candado, "Bloquear", ["bash", "-c", "if command -v hyprlock >/dev/null; then pidof hyprlock || hyprlock; else loginctl lock-session; fi"], false)}
           {opcion("suspender", ICO.luna, "Suspender", ["systemctl", "suspend"], false)}
           {opcion("salir", ICO.salir, "Cerrar sesión", ["hyprctl", "dispatch", "hl.dsp.exit()"], true)}
           {opcion("reiniciar", ICO.reiniciar, "Reiniciar", ["systemctl", "reboot"], true)}
@@ -527,9 +665,12 @@ function Barra({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
 }
 
 app.start({
-  css: colores + estilo,
+  css: leerColores() + "\n" + estilo,
   gtkTheme: "Adwaita",
   main() {
+    vigilarColores()
+    vigilarRed()
+    revisarRoot()
     const monitores = createBinding(app, "monitors")
     return (
       <For each={monitores}>

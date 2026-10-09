@@ -72,6 +72,7 @@ window.barra {
 
 /* Módulos de info */
 .barra .red     { color: @texto; }
+.barra .red .tailscale { color: @acento; }
 .barra .sistema { color: @acento; }
 .barra .sistema .caliente { color: #f87171; }
 .barra .volumen { color: @acento; }

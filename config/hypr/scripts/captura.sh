@@ -16,7 +16,7 @@ fotos=$(xdg-user-dir PICTURES 2>/dev/null)
 CARPETA="${CAPTURAS_DIR:-$fotos/Capturas}"
 mkdir -p "$CARPETA"
 
-TEMA="$HOME/.config/rofi/themes/zero.rasi"
+TEMA="${XDG_CONFIG_HOME:-$HOME/.config}/rofi/themes/zero.rasi"
 color() { grep -oE "$1: #[0-9a-fA-F]{6}" "$TEMA" 2>/dev/null | head -1 | cut -d' ' -f2; }
 ACENTO=$(color acento); ACENTO=${ACENTO:-#88c0d0}
 

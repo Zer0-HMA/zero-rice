@@ -9,6 +9,7 @@
 #   ./install.sh --paleta=tokyo    paleta inicial (ver lista abajo)
 #   ./install.sh --actualizar      baja lo último del repo y actualiza (conserva tu paleta y fondo)
 #   ./install.sh --desinstalar     quita el rice (no borra paquetes)
+#   ./install.sh --version         muestra la versión
 #
 #   Paletas: acero carbon nieve niebla vino lavanda orquidea neon mono
 #            catppuccin tokyo nord gruvbox rosepine
@@ -19,7 +20,10 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC="$REPO/config"
 CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
 S="$CFG/hypr/scripts"
+ESTADO="${XDG_STATE_HOME:-$HOME/.local/state}/zero-rice"
+CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/zero-rice"
 RESPALDO="$CFG/rice-respaldo-$(date +%Y%m%d-%H%M%S)"
+VERSION=$(cat "$REPO/VERSION" 2>/dev/null || echo "?")
 
 SI=0; SOLO_CONFIGS=0; PALETA=""; MODO="instalar"
 for arg in "$@"; do
@@ -29,7 +33,8 @@ for arg in "$@"; do
     --paleta=*)     PALETA="${arg#--paleta=}" ;;
     --actualizar)   MODO="actualizar"; SOLO_CONFIGS=1 ;;
     --desinstalar)  MODO="desinstalar" ;;
-    -h|--help)      sed -n '2,15p' "$0"; exit 0 ;;
+    -h|--help)      sed -n '2,16p' "$0"; exit 0 ;;
+    -v|--version)   echo "zero-rice $VERSION"; exit 0 ;;
     *) echo "Opción desconocida: $arg (usa --help)"; exit 1 ;;
   esac
 done
@@ -73,6 +78,7 @@ cat <<'BANNER'
    ███████╗███████╗██║  ██║╚██████╔╝
    ╚══════╝╚══════╝╚═╝  ╚═╝ ╚═════╝
 BANNER
+printf '   versión %s\n' "$VERSION"
 }
 
 # ═════════════════════════ Desinstalar ═════════════════════════
@@ -89,16 +95,26 @@ desinstalar() {
     ok "Quité require(\"rice\") de hyprland.lua"
   fi
   local cosas=(
-    "$CFG/hypr/rice.lua" "$S/wall.sh" "$S/paleta.sh" "$S/red.sh" "$S/barra.sh" "$S/captura.sh"
-    "$S/lanzador.sh" "$S/panel.sh" "$S/clima.sh"
+    "$CFG/hypr/rice.lua" "$CFG/hypr/colores.lua" "$S/wall.sh" "$S/paleta.sh" "$S/red.sh" "$S/barra.sh"
+    "$S/captura.sh" "$S/lanzador.sh" "$S/panel.sh" "$S/clima.sh" "$S/temp.sh" "$S/portapapeles.sh"
     "$CFG/ags" "$CFG/rofi" "$CFG/swaync" "$CFG/kitty/paleta.conf"
     "$CFG/rice-paletas" "$CFG/rice-clima" "$CFG/rice-lanzador"
+    "$CFG/gtk-3.0/zero-paleta.css" "$CFG/gtk-4.0/zero-paleta.css"
   )
+  # hyprlock/hypridle solo si son los del rice (si eran tuyos, se quedan)
+  head -1 "$CFG/hypr/hyprlock.conf" 2>/dev/null | grep -q 'Generado por paleta.sh' && cosas+=("$CFG/hypr/hyprlock.conf")
+  grep -q '(zero-rice)' "$CFG/hypr/hypridle.conf" 2>/dev/null && cosas+=("$CFG/hypr/hypridle.conf")
   for c in "${cosas[@]}"; do
     [[ -e "$c" ]] || continue
     respaldar "$c"; rm -rf "$c"
   done
   [[ -f "$CFG/kitty/kitty.conf" ]] && sed -i '/^# Colores de paleta.sh$/d; /^include paleta.conf$/d' "$CFG/kitty/kitty.conf"
+  for v in 3.0 4.0; do
+    [[ -f "$CFG/gtk-$v/gtk.css" ]] || continue
+    sed -i '/^@import url("zero-paleta.css");$/d' "$CFG/gtk-$v/gtk.css"
+    [[ -s "$CFG/gtk-$v/gtk.css" ]] || rm -f "$CFG/gtk-$v/gtk.css"
+  done
+  rm -rf "$ESTADO" "$CACHE"
   en_hyprland && hyprctl reload >/dev/null 2>&1 || true
   ok "Rice quitado. Todo quedó respaldado en: $RESPALDO"
   info "Tus fondos en ~/.config/wallpapers no se tocaron."
@@ -139,6 +155,8 @@ else
     curl jq libarchive                                             # clima
     ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji papirus-icon-theme librsvg   # fuentes e íconos
     thunar gvfs tumbler                                            # archivos
+    hyprlock hypridle hyprpolkitagent xdg-desktop-portal-hyprland  # bloqueo, contraseñas, compartir pantalla
+    cliphist                                                       # historial del portapapeles
     base-devel git                                                 # para el AUR
   )
   if command -v rofi >/dev/null 2>&1; then   # si ya hay un rofi (ej. rofi-wayland), no lo cambiamos
@@ -231,7 +249,7 @@ fi
 [[ -f "$CFG/hypr/rice.conf" ]] && { respaldar "$CFG/hypr/rice.conf"; rm -f "$CFG/hypr/rice.conf"; }
 ok "Hyprland → rice.lua  (tus ajustes personales van en ~/.config/hypr/mio.lua)"
 
-for s in wall paleta red barra captura lanzador panel clima; do
+for s in wall paleta red barra captura lanzador panel clima temp portapapeles; do
   instalar "hypr/scripts/$s.sh" "$S/$s.sh" x
 done
 ok "Scripts → ~/.config/hypr/scripts"
@@ -246,6 +264,18 @@ ok "Rofi → lanzador"
 
 instalar swaync/config.json "$CFG/swaync/config.json"
 ok "SwayNC → notificaciones"
+
+if [[ -f "$CFG/hypr/hypridle.conf" ]] && ! grep -q '(zero-rice)' "$CFG/hypr/hypridle.conf"; then
+  info "Ya tenías hypridle.conf: no lo toqué"
+else
+  instalar hypr/hypridle.conf "$CFG/hypr/hypridle.conf"
+  ok "Bloqueo automático → hypridle (10 min) · Super + L para bloquear"
+fi
+
+# estado y caché fuera de ~/.config (versiones viejas los guardaban ahí)
+mkdir -p "$ESTADO" "$CACHE"
+[[ -f "$CFG/rice-paletas/actual" && ! -f "$ESTADO/paleta" ]] && mv "$CFG/rice-paletas/actual" "$ESTADO/paleta"
+[[ -d "$CFG/rice-lanzador" ]] && rm -rf "$CFG/rice-lanzador"
 
 # paletas: agrega las nuevas sin borrar las que el usuario haya creado
 LISTA="$CFG/rice-paletas/paletas.txt"
@@ -268,7 +298,7 @@ fi
 
 # ═════════════════════════ 4. Paleta ═════════════════════════
 titulo "Paleta de colores"
-ACTUAL=$(cat "$CFG/rice-paletas/actual" 2>/dev/null || true)
+ACTUAL=$(cat "$ESTADO/paleta" 2>/dev/null || true)
 if [[ -z "$PALETA" && -n "$ACTUAL" ]]; then
   # ya tenía una: se reaplica sin tocar su fondo de pantalla
   "$S/paleta.sh" regenerar >/dev/null 2>&1 || true
@@ -297,10 +327,12 @@ fi
 # ═════════════════════════ 5. Clima ═════════════════════════
 titulo "Clima"
 if command -v jq >/dev/null 2>&1 && command -v curl >/dev/null 2>&1; then
-  if [[ -s "$CFG/rice-clima/ubicacion" ]]; then
-    ok "Ciudad guardada: $(cut -d'|' -f1 "$CFG/rice-clima/ubicacion")"
+  "$S/clima.sh" describir 0 >/dev/null 2>&1 || true   # mueve los datos de versiones viejas a su nuevo lugar
+  UBI="$ESTADO/clima/ubicacion"
+  if [[ -s "$UBI" ]]; then
+    ok "Ciudad guardada: $(cut -d'|' -f1 "$UBI")"
   elif "$S/clima.sh" actualizar 2>/dev/null; then
-    ok "Ubicación detectada: $(cut -d'|' -f1 "$CFG/rice-clima/ubicacion") (aprox.; cámbiala con Super + Shift + C)"
+    ok "Ubicación detectada: $(cut -d'|' -f1 "$UBI") (aprox.; cámbiala con Super + Shift + C)"
   else
     warn "No pude detectar la ubicación; elige tu ciudad con Super + Shift + C"
   fi
@@ -341,6 +373,7 @@ cat <<'RESUMEN'
   Super + Shift + C      elegir ciudad del clima
   Super + W              elegir fondo   ·   Super + Shift + W  fondo aleatorio
   Super + N              notificaciones ·   Super + Shift + N  menú de red
+  Super + L              bloquear       ·   Super + Shift + V  portapapeles
   Super + B              reiniciar la barra
   Impr Pant              captura de área ·  Shift/Super + Impr Pant  pantalla/ventana
 

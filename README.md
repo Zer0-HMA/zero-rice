@@ -1,5 +1,13 @@
 # ZERO — rice para Hyprland
 
+[![Revisar](https://github.com/Zer0-HMA/zero-rice/actions/workflows/revisar.yml/badge.svg)](https://github.com/Zer0-HMA/zero-rice/actions/workflows/revisar.yml)
+![Versión](https://img.shields.io/badge/versión-0.1.0-blue)
+![Arch Linux](https://img.shields.io/badge/Arch_Linux-1793D1?logo=archlinux&logoColor=white)
+![Hyprland](https://img.shields.io/badge/Hyprland-Lua-58E1FF)
+[![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-green)](LICENSE)
+
+*[English version](README.en.md)*
+
 Configuración completa para **Arch Linux + Hyprland** (config en Lua): barra con AGS, lanzador con clima y estadísticas, 14 paletas de colores que cambian todo el escritorio con un atajo, menú de red, capturas de pantalla con vista previa y más.
 
 ![Lanzador](capturas/lanzador.png)
@@ -14,6 +22,11 @@ Configuración completa para **Arch Linux + Hyprland** (config en Lua): barra co
 - **Menú de red:** Wi-Fi con barras de señal, redes ocultas, cable y configuración avanzada.
 - **Capturas de pantalla:** área, pantalla o ventana; notificación con vista previa y botones Abrir / Carpeta / Editar / Borrar.
 - **Notificaciones (SwayNC)** y **fondos de pantalla (awww)** con selector de miniaturas.
+- **Pantalla de bloqueo (hyprlock)** con los colores de tu paleta, y bloqueo automático a los 10 minutos (hypridle).
+- **Historial del portapapeles** (cliphist) con texto e imágenes.
+- **Apps GTK con tu paleta:** Thunar y las demás apps GTK cambian de color y de modo claro/oscuro junto con todo lo demás.
+- **Tailscale** en el menú de red y en la barra, si lo tienes instalado.
+- Lo que un escritorio necesita para el día a día: agente de **polkit** (ventanas de contraseña) y **portal de escritorio** (compartir pantalla en Discord, Meet, OBS).
 
 ## Requisitos
 
@@ -26,7 +39,7 @@ Todo lo demás lo instala el script: kitty, rofi, swaync, NetworkManager, pipewi
 ## Instalación
 
 ```bash
-git clone https://github.com/TU_USUARIO/zero-rice.git
+git clone https://github.com/Zer0-HMA/zero-rice.git
 cd zero-rice
 ./install.sh
 ```
@@ -40,6 +53,7 @@ El script pregunta antes de cada paso, respalda todo lo que reemplaza en `~/.con
 | `./install.sh --paleta=tokyo` | Elige la paleta inicial |
 | `./install.sh --actualizar` | Baja lo último del repo y actualiza (conserva tu paleta, tu fondo y tu ciudad) |
 | `./install.sh --desinstalar` | Quita el rice (no borra paquetes; todo queda respaldado) |
+| `./install.sh --version` | Muestra la versión instalada |
 
 > Puedes correrlo desde la TTY antes de entrar a Hyprland por primera vez, o desde dentro de Hyprland (se aplica en vivo).
 
@@ -53,6 +67,8 @@ El script pregunta antes de cada paso, respalda todo lo que reemplaza en `~/.con
 | `Super + W` | Elegir fondo de pantalla (con miniaturas) |
 | `Super + Shift + W` | Fondo aleatorio |
 | `Super + N` | Centro de notificaciones |
+| `Super + L` | Bloquear la pantalla |
+| `Super + Shift + V` | Historial del portapapeles |
 | `Super + Shift + N` | Menú de red |
 | `Super + B` | Reiniciar la barra |
 | `Impr Pant` / `Super + Shift + S` | Captura de un área |
@@ -74,7 +90,17 @@ Se cambian con `Super + Shift + P`, con el botón de paleta de la barra o desde 
 
 **Agregar tu propia paleta:** abre `~/.config/rice-paletas/paletas.txt`, copia una línea y cambia los colores. El formato viene explicado al principio del archivo. Si el color de fondo es claro, todo el escritorio se vuelve tema claro automáticamente.
 
-Si no quieres que la paleta cambie tu fondo de pantalla o los colores de kitty, edita las primeras líneas de `~/.config/hypr/scripts/paleta.sh` (`CAMBIAR_FONDO=0`, `TEMA_KITTY=0`).
+Al principio de `~/.config/hypr/scripts/paleta.sh` puedes elegir qué cambia con la paleta:
+
+| Opción | Qué hace |
+|---|---|
+| `CAMBIAR_FONDO=1` | (por defecto) pone el fondo de la paleta solo si tu fondo actual también es de paleta; si elegiste uno con `Super + W`, se respeta |
+| `CAMBIAR_FONDO=2` | siempre pone el fondo de la paleta · `0` nunca toca tu fondo |
+| `TEMA_KITTY=0` | no cambia los colores de kitty |
+| `TEMA_GTK=0` | no cambia los colores de las apps GTK |
+| `TEMA_BLOQUEO=0` | no cambia la pantalla de bloqueo |
+
+Si ya tenías tu propio `hyprlock.conf` o `hypridle.conf`, el rice no los toca.
 
 ## Clima
 
@@ -98,6 +124,20 @@ Si no quieres que la paleta cambie tu fondo de pantalla o los colores de kitty, 
 - **Tus fondos de pantalla** van en `~/.config/wallpapers/` (jpg, png, webp, gif). Elígelos con `Super + W`.
 - **Carpeta de capturas:** `~/Pictures/Capturas` (o la carpeta de imágenes de tu idioma). Se copian solas al portapapeles.
 
+## Dónde se guarda cada cosa
+
+| Qué | Dónde |
+|---|---|
+| Configuración (lo que puedes editar) | `~/.config/hypr`, `~/.config/ags`, `~/.config/rofi`, `~/.config/rice-paletas` |
+| Tus ajustes personales | `~/.config/hypr/mio.lua` (el instalador nunca lo toca) |
+| Estado: paleta actual y tu ciudad | `~/.local/state/zero-rice` |
+| Caché: clima, lista de ciudades, panel del lanzador | `~/.cache/zero-rice` (se puede borrar sin problema) |
+| Logs | `$XDG_RUNTIME_DIR/zero-rice` (se borran al apagar) |
+
+## Privacidad
+
+Para el clima, el rice consulta tu ubicación aproximada por IP a [ip-api.com](https://ip-api.com) (por HTTP, sin cifrar) o, si falla, a [ipinfo.io](https://ipinfo.io). Si prefieres que no se consulte nada, elige tu ciudad con `Super + Shift + C`: así ya no se vuelve a detectar. El clima en sí viene de [Open-Meteo](https://open-meteo.com), que solo recibe las coordenadas de la ciudad.
+
 ## Problemas comunes
 
 **La barra no aparece.** Corre `~/.config/hypr/scripts/barra.sh log` para ver el error. Si dice que falta algo de `Astal`, instala `yay -S libastal-meta`.
@@ -106,6 +146,10 @@ Si no quieres que la paleta cambie tu fondo de pantalla o los colores de kitty, 
 
 **El clima dice "no disponible".** Revisa tu internet y elige tu ciudad con `Super + Shift + C`.
 
+**Tailscale dice que necesita permiso.** Para conectarlo y desconectarlo desde el menú sin `sudo`, corre una vez `sudo tailscale set --operator=$USER`.
+
+**Una app no me pide la contraseña de administrador.** Revisa que el agente de polkit esté corriendo: `systemctl --user status hyprpolkitagent`.
+
 **El fondo de pantalla no cambia.** El proyecto `swww` se renombró a `awww`; el instalador instala `awww` desde el AUR, y los scripts usan el que tengas.
 
 ## Estructura del repo
@@ -113,9 +157,12 @@ Si no quieres que la paleta cambie tu fondo de pantalla o los colores de kitty, 
 ```
 zero-rice/
 ├── install.sh                      instalador (instalar / actualizar / desinstalar)
+├── VERSION · CHANGELOG.md · LICENSE
 ├── config/
 │   ├── hypr/rice.lua               look, autoinicio y atajos
-│   ├── hypr/scripts/               barra, paleta, clima, panel, lanzador, red, captura, wall
+│   ├── hypr/hypridle.conf          bloqueo automático
+│   ├── hypr/scripts/               barra, paleta, clima, panel, lanzador, red, captura, wall,
+│   │                               temp, portapapeles
 │   ├── ags/                        barra (app.tsx + style.css)
 │   ├── rofi/                       lanzador
 │   ├── swaync/                     notificaciones
@@ -123,7 +170,11 @@ zero-rice/
 └── capturas/                       imágenes de este README
 ```
 
-Los colores de la barra, Rofi, SwayNC y kitty no están en el repo: los genera `paleta.sh` a partir de la paleta que elijas.
+Los colores de Hyprland (`colores.lua`), la barra, Rofi, SwayNC, kitty, GTK y hyprlock no están en el repo: los genera `paleta.sh` a partir de la paleta que elijas.
+
+## Contribuir
+
+¿Encontraste un error? [Abre un issue](https://github.com/Zer0-HMA/zero-rice/issues/new/choose) con el log de la barra (`barra.sh log`) y tu versión de Hyprland. Cada cambio pasa por una revisión automática (ShellCheck y sintaxis de Lua) en GitHub Actions.
 
 ## Créditos
 
@@ -133,3 +184,8 @@ Los colores de la barra, Rofi, SwayNC y kitty no están en el repo: los genera `
 - Ubicación aproximada: [ip-api.com](https://ip-api.com) e [ipinfo.io](https://ipinfo.io)
 - Íconos: [Nerd Fonts](https://www.nerdfonts.com) y [Papirus](https://github.com/PapirusDevelopmentTeam/papirus-icon-theme)
 - Paletas Catppuccin, Tokyo Night, Nord, Gruvbox y Rosé Pine de sus respectivos proyectos
+- Pantalla de bloqueo e inactividad: [hyprlock](https://github.com/hyprwm/hyprlock) y [hypridle](https://github.com/hyprwm/hypridle); portapapeles: [cliphist](https://github.com/sentriz/cliphist)
+
+## Licencia
+
+[MIT](LICENSE) © Zer0-HMA

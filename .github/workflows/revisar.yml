@@ -1,0 +1,33 @@
+name: Revisar
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sintaxis de bash
+        run: for f in install.sh config/hypr/scripts/*.sh; do bash -n "$f"; done
+
+      - name: ShellCheck
+        run: shellcheck -S warning install.sh config/hypr/scripts/*.sh
+
+      - name: Sintaxis de Lua
+        run: |
+          sudo apt-get install -y -qq lua5.4 >/dev/null
+          luac5.4 -p config/hypr/rice.lua
+
+      - name: JSON de SwayNC
+        run: jq empty config/swaync/config.json
+
+      - name: Paletas bien escritas
+        run: |
+          grep -vE '^[[:space:]]*(#|$)' config/rice-paletas/paletas.txt | while IFS='|' read -r id _ _ _ c1 c2 c3 c4 c5 c6 c7 c8; do
+            for c in $c1 $c2 $c3 $c4 $c5 $c6 $c7 $c8; do
+              [[ "$c" =~ ^#[0-9a-fA-F]{6}$ ]] || { echo "Paleta '$id': color inválido '$c'"; exit 1; }
+            done
+          done

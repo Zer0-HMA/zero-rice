@@ -4,13 +4,20 @@
 # Imprime la ruta del PNG generado. Lo usa lanzador.sh.
 shopt -u patsub_replacement 2>/dev/null
 
+# primera muestra de la CPU: mientras se calcula lo demás pasa el tiempo para la segunda
+# (antes se esperaba con un sleep fijo antes de abrir el lanzador)
+read -r _ u1 n1 s1 i1 w1 x1 y1 z1 _ < /proc/stat
+t1=${EPOCHREALTIME/[.,]/}
+
 W=${PANEL_W:-300}
 H=${PANEL_H:-556}
-DIR="$HOME/.config/rice-lanzador"
-CLIMA="$HOME/.config/rice-clima/actual"
-COLORES="$HOME/.config/rofi/themes/colores.rasi"
-SCRIPTS="$HOME/.config/hypr/scripts"
+CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
+DIR="${XDG_CACHE_HOME:-$HOME/.cache}/zero-rice/lanzador"
+CLIMA="${XDG_CACHE_HOME:-$HOME/.cache}/zero-rice/clima/actual"
+COLORES="$CFG/rofi/themes/colores.rasi"
+SCRIPTS="$CFG/hypr/scripts"
 mkdir -p "$DIR"
+[[ -d "$CFG/rice-lanzador" ]] && rm -rf "$CFG/rice-lanzador"   # caché de versiones viejas
 
 command -v rsvg-convert >/dev/null 2>&1 || exit 1
 
@@ -36,21 +43,13 @@ hora=$(date +%H:%M)
 fecha=$(date '+%A %d de %B')
 
 # ─────────── estadísticas ───────────
-read -r _ u1 n1 s1 i1 w1 x1 y1 z1 _ < /proc/stat
-sleep 0.15
-read -r _ u2 n2 s2 i2 w2 x2 y2 z2 _ < /proc/stat
-tot=$(( (u2+n2+s2+i2+w2+x2+y2+z2) - (u1+n1+s1+i1+w1+x1+y1+z1) ))
-idle=$(( (i2+w2) - (i1+w1) ))
-cpu=$(( tot > 0 ? (100 * (tot - idle)) / tot : 0 ))
-
 mt=$(awk '/^MemTotal/{print $2}' /proc/meminfo); ma=$(awk '/^MemAvailable/{print $2}' /proc/meminfo)
 ram=$(( 100 * (mt - ma) / mt ))
 ram_txt=$(awk -v u=$((mt - ma)) -v t="$mt" 'BEGIN{printf "%.1f / %.0f GB", u/1048576, t/1048576}')
 
 read -r disco disco_txt < <(df -P / | awk 'NR==2{gsub("%","",$5); printf "%s %.0f / %.0f GB", $5, $3/1048576, $2/1048576}')
 
-temp=$(cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | sort -n | tail -1)
-temp=$(( ${temp:-0} / 1000 ))
+temp=$("$SCRIPTS/temp.sh" 2>/dev/null); [[ "$temp" =~ ^[0-9]+$ ]] || temp=0
 
 bat=""; bat_estado=""
 for b in /sys/class/power_supply/BAT*; do
@@ -80,7 +79,7 @@ fi
 
 # ─────────── fondo (recortado al tamaño del panel; solo se rehace cuando cambias de fondo) ───────────
 escala=${PANEL_ESCALA:-1}
-fondo=$(cat "$HOME/.config/wallpapers/.actual" 2>/dev/null)
+fondo=$(cat "$CFG/wallpapers/.actual" 2>/dev/null)
 recorte="$DIR/fondo-panel.png"
 
 hacer_recorte() {
@@ -110,6 +109,14 @@ if [[ "$(cat "$DIR/.recorte" 2>/dev/null)" != "$clave" ]]; then
 fi
 img_fondo=""
 [[ -f "$recorte" ]] && img_fondo="<image href=\"fondo-panel.png\" x=\"0\" y=\"0\" width=\"$W\" height=\"$H\"/>"
+
+# ─────────── CPU (segunda muestra; solo se espera lo que falte para 100 ms) ───────────
+falta=$(( 100000 - (${EPOCHREALTIME/[.,]/} - t1) ))
+(( falta > 0 )) && sleep "0.$(printf '%06d' "$falta")"
+read -r _ u2 n2 s2 i2 w2 x2 y2 z2 _ < /proc/stat
+tot=$(( (u2+n2+s2+i2+w2+x2+y2+z2) - (u1+n1+s1+i1+w1+x1+y1+z1) ))
+idle=$(( (i2+w2) - (i1+w1) ))
+cpu=$(( tot > 0 ? (100 * (tot - idle)) / tot : 0 ))
 
 # ─────────── dibujo ───────────
 barra() {   # $1=y  $2=porcentaje  → barra de progreso
