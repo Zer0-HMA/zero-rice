@@ -1,7 +1,7 @@
 # ZERO — a Hyprland rice
 
 [![Revisar](https://github.com/Zer0-HMA/zero-rice/actions/workflows/revisar.yml/badge.svg)](https://github.com/Zer0-HMA/zero-rice/actions/workflows/revisar.yml)
-![Version](https://img.shields.io/badge/version-0.3.0-blue)
+![Version](https://img.shields.io/badge/version-0.4.0-blue)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 *[Versión en español](README.md)*
@@ -16,6 +16,8 @@ A complete setup for **Arch Linux + Hyprland** (Lua config): an AGS bar, a Rofi 
 
 - **Hyprland look:** animated gradient borders, rounded corners, blur, shadows and smooth animations.
 - **Bar (AGS v3):** user (turns white when you're root), workspaces, clock with calendar, media, network (with Tailscale), CPU/RAM/temperature, volume, battery, tray, palettes, notifications and power menu. A watchdog restarts it if it crashes, and it repaints itself live when you switch palettes.
+- **6 bar styles** (`Super + Shift + B` or right-click the palette button): islands, floating, block, neon, glass and minimal, independent from the palette. Clock, network and system expand on hover, and the media module has an audio spectrum.
+- **Neovim with LazyVim** that follows your palette: switch palettes and every open Neovim repaints itself. `Space + z` shortcuts change palette and bar style from the editor.
 - **Launcher (Rofi):** greeting panel with clock, **local weather** and PC stats; app grid with Apps / Commands / Files tabs.
 - **48 palettes:** Catppuccin, Tokyo Night, Nord, Gruvbox, Rosé Pine, Dracula, Kanagawa and more — plus **one palette per wallpaper image** you own. Add your own in one line, or theme a new app by dropping in a `.tpl` template.
 - **Network menu:** Wi-Fi with signal bars, hidden networks, wired, Tailscale and advanced settings.
@@ -33,7 +35,7 @@ cd zero-rice
 ./install.sh
 ```
 
-Requires Arch Linux (or a `pacman`-based distro) and **Hyprland 0.55+ with Lua config** (`hyprland.lua`). The script asks before each step, backs up everything it replaces to `~/.config/rice-respaldo-<date>/`, and installs the rest (including `yay` and AGS from the AUR if needed). Options: `--si` (yes to all), `--solo-configs`, `--paleta=tokyo`, `--actualizar` (update), `--desinstalar` (uninstall), `--version`, `--enlazar` / `--copiar`.
+Requires Arch Linux (or a `pacman`-based distro) and **Hyprland 0.55+ with Lua config** (`hyprland.lua`). The script asks before each step, backs up everything it replaces to `~/.config/rice-respaldo-<date>/`, and installs the rest (including `yay` and AGS from the AUR if needed). Options: `--si` (yes to all), `--solo-configs`, `--paleta=tokyo`, `--actualizar` (update), `--desinstalar` (uninstall), `--version`, `--enlazar` / `--copiar`, `--sin-nvim` (don't touch Neovim).
 
 ## Shortcuts
 
@@ -51,6 +53,7 @@ Requires Arch Linux (or a `pacman`-based distro) and **Hyprland 0.55+ with Lua c
 | `Super + Shift + A` / `Super + Shift + E` | Animation style / 3D workspace effect |
 | `Super + Shift + F` | Profile picture and name |
 | `Super + B` | Restart the bar |
+| `Super + Shift + B` | Bar style |
 | `Print` / `Super + Shift + S` | Area screenshot |
 
 Hacking on the rice? `./install.sh --enlazar` symlinks `~/.config` to the repo so your edits land straight in git.
