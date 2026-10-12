@@ -2,6 +2,14 @@
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [SemVer](https://semver.org/lang/es/).
 
+## [Sin publicar]
+
+### Agregado
+- **zero-lock**: pantalla de bloqueo personalizable (hyprlock) con 5 estilos (`tarjetas`, `minimal`, `centrado`, `terminal`, `panel`).
+  Menú en rofi (`Super + Shift + L`): estilo, fondo (automático, captura, explorador de archivos con vista previa, galería o color), desenfoque, brillo, tamaño, reloj 12/24 h, colores, foto y elementos.
+  Los textos se recortan para no salirse de los recuadros y todo se escala a la resolución de tu pantalla.
+  Usa la paleta activa mediante la plantilla `hyprlock-colores.conf.tpl`. `Super + L` bloquea y `hypridle` usa el mismo comando.
+
 ## [0.2.0] — 2026-10-09
 
 ### Agregado

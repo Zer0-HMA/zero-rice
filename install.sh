@@ -233,7 +233,7 @@ fi
 [[ -f "$CFG/hypr/rice.conf" ]] && { respaldar "$CFG/hypr/rice.conf"; rm -f "$CFG/hypr/rice.conf"; }
 ok "Hyprland → rice.lua  (tus ajustes personales van en ~/.config/hypr/mio.lua)"
 
-for s in wall paleta red barra captura lanzador panel clima elegir-fondo; do
+for s in wall paleta red barra captura lanzador panel clima elegir-fondo zero-lock; do
   instalar "hypr/scripts/$s.sh" "$S/$s.sh" x
 done
 for l in color plantillas fondos dinamica; do

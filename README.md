@@ -17,6 +17,7 @@ Configuración completa para **Arch Linux + Hyprland** (config en Lua): barra co
 - **Clima:** detecta tu ciudad por internet, o la eliges de una lista que se filtra mientras escribes.
 - **Menú de red:** Wi-Fi con barras de señal, redes ocultas, cable y configuración avanzada.
 - **Capturas de pantalla:** área, pantalla o ventana; notificación con vista previa y botones Abrir / Carpeta / Editar / Borrar.
+- **Pantalla de bloqueo (`zero-lock`):** 5 estilos (tarjetas, minimal, centrado, terminal, panel) y un menú para elegir fondo (con explorador de archivos y vista previa), desenfoque, brillo, tamaño, reloj 12/24 h, foto y qué elementos mostrar; sigue tu paleta.
 - **Notificaciones (SwayNC)** y **fondos de pantalla (awww)** con selector de miniaturas.
 
 ## Requisitos
@@ -52,6 +53,8 @@ El script pregunta antes de cada paso, respalda todo lo que reemplaza en `~/.con
 | Atajo | Acción |
 |---|---|
 | `Super + R` | Lanzador de apps |
+| `Super + L` | Bloquear pantalla |
+| `Super + Shift + L` | Personalizar la pantalla de bloqueo |
 | `Super + Shift + P` | Cambiar paleta de colores |
 | `Super + Ctrl + P` | Siguiente paleta |
 | `Super + Alt + P` | Paleta aleatoria |

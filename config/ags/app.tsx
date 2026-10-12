@@ -726,7 +726,7 @@ function Energia() {
       <label label={ICO.power} />
       <popover>
         <box class="pop-energia" orientation={Gtk.Orientation.VERTICAL} spacing={4}>
-          {opcion("bloquear", ICO.candado, "Bloquear", ["bash", "-c", "if command -v hyprlock >/dev/null; then pidof hyprlock || hyprlock; else loginctl lock-session; fi"], false)}
+          {opcion("bloquear", ICO.candado, "Bloquear", ["bash", "-c", "if command -v hyprlock >/dev/null; then ~/.config/hypr/scripts/zero-lock.sh lock; else loginctl lock-session; fi"], false)}
           {opcion("suspender", ICO.luna, "Suspender", ["systemctl", "suspend"], false)}
           {opcion("salir", ICO.salir, "Cerrar sesión", ["hyprctl", "dispatch", "hl.dsp.exit()"], true)}
           {opcion("reiniciar", ICO.reiniciar, "Reiniciar", ["systemctl", "reboot"], true)}
