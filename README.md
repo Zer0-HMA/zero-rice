@@ -1,7 +1,7 @@
 # ZERO — rice para Hyprland
 
 [![Revisar](https://github.com/Zer0-HMA/zero-rice/actions/workflows/revisar.yml/badge.svg)](https://github.com/Zer0-HMA/zero-rice/actions/workflows/revisar.yml)
-![Versión](https://img.shields.io/badge/versión-0.5.0-blue)
+![Versión](https://img.shields.io/badge/versión-0.5.1-blue)
 ![Arch Linux](https://img.shields.io/badge/Arch_Linux-1793D1?logo=archlinux&logoColor=white)
 ![Hyprland](https://img.shields.io/badge/Hyprland-Lua-58E1FF)
 [![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-green)](LICENSE)
@@ -302,7 +302,9 @@ Para el clima, el rice consulta tu ubicación aproximada por IP a [ip-api.com](h
 
 ## Problemas comunes
 
-**`Super + L` no bloquea.** Corre `zero-lock diagnostico`: te dice si falta hyprlock, si Hyprland no tiene el atajo registrado o si hay procesos atorados. Si vienes de una versión anterior a la 0.3.0, actualiza con `./install.sh --actualizar` (antes, con el bluetooth apagado, el bloqueo se quedaba trabado).
+**`Super + L` no bloquea (o te vuelve a bloquear justo después de escribir tu contraseña).** Es un bug de hyprlock 0.9.6 con Hyprland 0.56: a veces se congela o se cae al desbloquear ([hyprlock#1055](https://github.com/hyprwm/hyprlock/issues/1055)). Desde la 0.5.1, `zero-lock` le pregunta a Hyprland si la sesión está bloqueada de verdad (`hyprctl locked`): si encuentra un hyprlock colgado lo cierra y bloquea de nuevo, y si hyprlock se cae al desbloquear ya no te vuelve a bloquear. Actualiza con `./install.sh --actualizar`. El arreglo de fondo llegará con la próxima versión de hyprlock; si no quieres esperar: `yay -S hyprlock-git`.
+
+**Sigue sin bloquear.** Corre `zero-lock diagnostico`: te dice si falta hyprlock, si Hyprland no tiene el atajo registrado o si hay procesos atorados. Si vienes de una versión anterior a la 0.3.0, actualiza con `./install.sh --actualizar` (antes, con el bluetooth apagado, el bloqueo se quedaba trabado).
 
 **`./install.sh` dice "Permiso denegado".** Córrelo con `bash install.sh`, o actualiza el repo (`git pull`): la 0.3.0 ya trae el permiso.
 

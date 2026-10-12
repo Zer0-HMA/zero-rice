@@ -388,7 +388,15 @@ if ((NVIM)); then
 fi
 
 if [[ -f "$CFG/hypr/hypridle.conf" ]] && ! grep -q '(zero-rice)' "$CFG/hypr/hypridle.conf"; then
-  info "Ya tenías hypridle.conf: no lo toqué (para usar zero-lock pon:  lock_cmd = pidof hyprlock || $S/zero-lock.sh lock)"
+  # zero-lock 1.3 decide solo si hay un hyprlock de verdad o uno colgado: el "pidof hyprlock ||" de antes
+  # hacía que, con un hyprlock colgado, hypridle no volviera a bloquear nunca (ni antes de suspender)
+  if grep -qE '^[[:space:]]*lock_cmd[[:space:]]*=[[:space:]]*pidof hyprlock \|\|.*zero-lock(\.sh)? lock[[:space:]]*($|#)' "$CFG/hypr/hypridle.conf"; then
+    respaldar "$CFG/hypr/hypridle.conf"
+    sed -i -E 's#^([[:space:]]*lock_cmd[[:space:]]*=[[:space:]]*)pidof hyprlock \|\|[[:space:]]*(.*zero-lock(\.sh)? lock)([[:space:]]*($|\#.*))#\1\2 --auto\4#' "$CFG/hypr/hypridle.conf"
+    ok "hypridle.conf: lock_cmd actualizado a zero-lock lock --auto (ya no se traba con un hyprlock colgado)"
+  else
+    info "Ya tenías hypridle.conf: no lo toqué (para usar zero-lock pon:  lock_cmd = $S/zero-lock.sh lock --auto)"
+  fi
 else
   instalar hypr/hypridle.conf "$CFG/hypr/hypridle.conf"
   ok "Bloqueo automático → hypridle (10 min) · Super + L para bloquear"

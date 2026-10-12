@@ -2,6 +2,19 @@
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [SemVer](https://semver.org/lang/es/).
 
+## [0.5.1] — 2026-10-12
+
+### Corregido
+- **`Super + L` dejaba de bloquear** después del primer desbloqueo. hyprlock 0.9.6 a veces se congela al desbloquear ([hyprlock#1055](https://github.com/hyprwm/hyprlock/issues/1055)): el proceso quedaba vivo sin bloquear nada, y `zero-lock` (y `hypridle`, con su `pidof hyprlock ||`) creían que la pantalla ya estaba bloqueada. Ahora `zero-lock` le pregunta a Hyprland (`hyprctl locked`) y, si el hyprlock está colgado, lo cierra y bloquea de nuevo. Esto también arregla que hypridle no bloqueara antes de suspender.
+- **Te volvía a bloquear justo después de escribir tu contraseña** si hyprlock se caía al desbloquear: lo tomaba como una caída y abría la pantalla de emergencia. Ahora solo reintenta si la sesión sigue bloqueada.
+- La descarga de la portada de la música heredaba el candado de "ya estoy bloqueando": mientras se descargaba, `Super + L` se ignoraba.
+- `hypridle.conf` usa `zero-lock.sh lock --auto` (sin `pidof hyprlock ||`); el instalador migra el tuyo si tenía la línea vieja de zero-lock.
+- `misc:allow_session_lock_restore` encendido: si hyprlock se cae con la pantalla bloqueada, se puede volver a abrir.
+
+### Agregado
+- `zero-lock diagnostico` dice si Hyprland ve la sesión bloqueada, si hay un hyprlock colgado y avisa del bug de hyprlock 0.9.6.
+- CI: prueba de regresión con un hyprlock simulado que se congela y se cae (`.github/pruebas/zero-lock-bloqueo.sh`).
+
 ## [0.5.0] — 2026-10-12
 
 ### Agregado
