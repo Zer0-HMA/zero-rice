@@ -19,7 +19,7 @@
 # Colores: sigue la paleta de zero-rice (Super+Shift+P) o usa una propia.
 
 shopt -u patsub_replacement 2>/dev/null
-VERSION="1.3.1"
+VERSION="1.3.2"
 CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
 DIR="$CFG/zero-lock"
 CONF="$DIR/config"
@@ -348,8 +348,18 @@ EOF
 # hyprlock solo lee png/jpg (y webp en versiones nuevas): gif, webp animado, avif, etc. se convierten a png
 # (solo la primera vez: se reusa mientras la imagen no cambie)
 fondo_compatible() {   # ruta → ruta que hyprlock puede abrir, o "screenshot"
-  local a=$1 out="$CACHE/fondo.png" firma
+  local a=$1 out="$CACHE/fondo.png" firma c
   [[ -f $a ]] || { echo screenshot; return; }
+  # fondo en video: hyprlock no reproduce video; usa un cuadro suyo (el mismo que ve el rice)
+  case "${a,,}" in
+    *.mp4|*.webm|*.mkv|*.mov|*.m4v|*.avi)
+      if [[ -f ${SRC%/*}/lib/video.sh ]] && c=$(T=6 crono "cuadro del video" t bash -c 'source "$1"; cuadro_de "$2"' _ "${SRC%/*}/lib/video.sh" "$a") && [[ -f $c ]]; then
+        echo "$c"
+      else
+        log "fondo en video $a: no pude sacar un cuadro (¿falta ffmpeg?) → uso captura"; echo screenshot
+      fi
+      return ;;
+  esac
   case "${a,,}" in *.png|*.jpg|*.jpeg) echo "$a"; return ;; esac
   firma="$a|$(stat -c %Y "$a" 2>/dev/null)"
   if [[ -s $out && $(cat "$out.de" 2>/dev/null) == "$firma" ]]; then echo "$out"; return; fi

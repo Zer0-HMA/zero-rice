@@ -12,7 +12,7 @@
 IMG_LISTA="$DIR/imagenes.txt"
 IMG_INDICE="$DIR/imagenes.idx"
 MINIS="${XDG_CACHE_HOME:-$HOME/.cache}/rice-paletas/miniaturas"
-IMG_REGEX='.*\.(jpe?g|png|webp|gif|bmp)$'
+IMG_REGEX='.*\.(jpe?g|png|webp|gif|bmp|mp4|webm|mkv|mov|m4v|avi)$'   # los videos usan un cuadro (lib/video.sh)
 
 _im() { if command -v magick >/dev/null 2>&1; then echo magick; elif command -v convert >/dev/null 2>&1; then echo convert; else return 1; fi; }
 
@@ -20,6 +20,7 @@ _im() { if command -v magick >/dev/null 2>&1; then echo magick; elif command -v 
 colores_de_imagen() {
   local img=$1 modo=${2:-oscuro} IM hist
   IM=$(_im) || return 1
+  img=$(cuadro_de "$img") || return 1      # si es un video, los colores salen de un cuadro suyo
   hist=$("$IM" "${img}[0]" -alpha off -resize 200x200 -colors 16 -depth 8 -format '%c' histogram:info:- 2>/dev/null \
          | sed -nE 's/^ *([0-9]+): *\([^)]*\) *(#[0-9A-Fa-f]{6}).*/\1 \2/p')
   [[ -n "$hist" ]] || return 1
@@ -152,7 +153,7 @@ indexar_imagenes() {
       id=$(imagen_id "$ruta")
       if cols=$(colores_de_imagen "$ruta" "$modo") && [[ -n "$cols" ]]; then
         # shellcheck disable=SC2086  # (cols son 14 palabras a propósito)
-        "$IM" "${ruta}[0]" -alpha off -thumbnail 192x108^ -gravity center -extent 192x108 "$MINIS/$id.png" 2>/dev/null
+        "$IM" "$(cuadro_de "$ruta")[0]" -alpha off -thumbnail 192x108^ -gravity center -extent 192x108 "$MINIS/$id.png" 2>/dev/null
         # shellcheck disable=SC2086
         linea_imagen "$id" "$(imagen_nombre "$ruta")" "imagen · $(basename "$(dirname "$ruta")")" "$ruta" $cols > "$tmp/$k.ok"
       fi

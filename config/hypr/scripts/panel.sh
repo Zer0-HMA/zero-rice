@@ -95,12 +95,18 @@ fi
 escala=${PANEL_ESCALA:-1}
 # shellcheck source=lib/fondoactual.sh
 source "$SCRIPTS/lib/fondoactual.sh" 2>/dev/null || fondo_actual() { cat "$CFG/wallpapers/.actual" 2>/dev/null; }
+# shellcheck source=lib/video.sh
+source "$SCRIPTS/lib/video.sh" 2>/dev/null
 fondo=$(fondo_actual)      # el fondo que se muestra AHORA (awww/swww), no solo el último que puso el rice
 recorte="$DIR/fondo-panel.png"
 
 hacer_recorte() {
   local origen=$fondo ext copia rc=0 conv="$DIR/convertido.png"
   if [[ ! -f "$origen" ]]; then rm -f "$recorte" "$DIR/.recorte"; return 1; fi
+  # fondo en video: el panel usa un cuadro suyo
+  if declare -F cuadro_de >/dev/null && es_video "$origen"; then
+    origen=$(cuadro_de "$origen") || { rm -f "$recorte" "$DIR/.recorte"; return 1; }
+  fi
   ext=${origen##*.}; ext=${ext,,}
   case "$ext" in
     png|jpg|jpeg) ;;

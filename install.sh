@@ -29,7 +29,7 @@ VERSION=$(cat "$REPO/VERSION" 2>/dev/null || echo "?")
 
 # scripts y archivos de la barra que instala el rice (una sola lista para instalar y desinstalar)
 SCRIPTS=(wall paleta red barra barra-estilo captura lanzador panel clima elegir-fondo temp portapapeles ws3d perfil animaciones zero-lock)
-LIBS=(color plantillas fondos dinamica fondoactual)
+LIBS=(color plantillas fondos dinamica fondoactual video)
 AGS=(app.tsx style.css ws3d.tsx efectos3d.ts panel.tsx)
 
 SI=0; SOLO_CONFIGS=0; PALETA=""; MODO="instalar"; NVIM=1
@@ -109,6 +109,7 @@ desinstalar() {
   preguntar "Esto quita las configuraciones del rice (no borra paquetes). ¿Seguro?" || exit 0
   [[ -x "$S/barra.sh" ]] && "$S/barra.sh" parar >/dev/null 2>&1 || true
   pkill -x swaync 2>/dev/null || true
+  pkill -x mpvpaper 2>/dev/null || true
 
   local HL="$CFG/hypr/hyprland.lua"
   if [[ -f "$HL" ]] && grep -q 'require("rice")' "$HL"; then
@@ -182,6 +183,7 @@ else
     curl jq libarchive                                             # clima
     ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji papirus-icon-theme librsvg   # fuentes e íconos
     imagemagick fastfetch                                          # paleta desde tu fondo y fotos de perfil · bienvenida de la terminal
+    ffmpeg socat                                                   # fondos en video: su cuadro (paletas, bloqueo) y pausarlos
     thunar gvfs tumbler                                            # archivos
     hyprlock hypridle hyprpolkitagent xdg-desktop-portal-hyprland  # bloqueo, contraseñas, compartir pantalla
     cliphist                                                       # historial del portapapeles
@@ -230,6 +232,22 @@ else
     fi
   else
     warn "Sin ayudante del AUR no se instalan AGS (la barra) ni awww."
+  fi
+
+  # fondos en video: mpvpaper (de los repos oficiales si está ahí; si no, del AUR)
+  if ! command -v mpvpaper >/dev/null 2>&1; then
+    titulo "Fondos en video"
+    info "Para poner videos de fondo (mp4, webm, mkv…) hace falta mpvpaper. Los GIF animados ya funcionan sin él."
+    if preguntar "¿Instalo mpvpaper?"; then
+      noconf=(); ((SI)) && noconf=(--noconfirm)
+      if pacman -Si mpvpaper >/dev/null 2>&1; then
+        sudo pacman -S --needed "${noconf[@]}" mpvpaper && ok "mpvpaper instalado" || warn "No se pudo instalar mpvpaper"
+      elif [[ -n "$AUR" ]]; then
+        "$AUR" -S --needed "${noconf[@]}" mpvpaper && ok "mpvpaper instalado (AUR)" || warn "No se pudo instalar mpvpaper del AUR"
+      else
+        warn "mpvpaper no está en tus repos y no hay ayudante del AUR: los videos de fondo no se van a reproducir"
+      fi
+    fi
   fi
   if ! command -v awww >/dev/null 2>&1 && ! command -v swww >/dev/null 2>&1; then
     info "Instalando swww como respaldo para los fondos..."
@@ -493,6 +511,8 @@ fi
 #TEMA_KITTY=1           # 1 = la terminal también cambia de color         · 0 = no tocar kitty
 #ESTILO_FONDO=lineas    # lineas · malla · aurora · rejilla · circulos · aleatorio
 #TEMA_GTK=1             # 1 = apps GTK (Thunar…) con tu paleta              · 0 = no tocarlas
+#VIDEO_PAUSA=FULL       # fondo en video: se pausa con ventanas a pantalla completa · MAX también maximizadas · ACTIVE con cualquier ventana · no = nunca
+#VIDEO_SONIDO=0         # 1 = el fondo en video suena
 AJUSTES
 
 # ═════════════════════════ 4. Paleta ═════════════════════════
@@ -595,6 +615,7 @@ cat <<'RESUMEN'
   Super + Ctrl + P       siguiente paleta  ·   Super + Alt + P  aleatoria
   Super + Shift + C      elegir ciudad del clima
   Super + W              elegir fondo   ·   Super + Shift + W  fondo aleatorio
+  Super + Shift + I      imagen o VIDEO de cualquier carpeta como fondo (wall.sh video pausa | seguir)
   Super + N              notificaciones ·   Super + Shift + N  menú de red
   Super + L              bloquear       ·   Super + Shift + L  personalizar el bloqueo
   Super + Shift + V      portapapeles   ·   Super + Shift + F  foto de perfil

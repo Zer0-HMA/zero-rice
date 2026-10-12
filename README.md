@@ -1,7 +1,7 @@
 # ZERO — rice para Hyprland
 
 [![Revisar](https://github.com/Zer0-HMA/zero-rice/actions/workflows/revisar.yml/badge.svg)](https://github.com/Zer0-HMA/zero-rice/actions/workflows/revisar.yml)
-![Versión](https://img.shields.io/badge/versión-0.5.2-blue)
+![Versión](https://img.shields.io/badge/versión-0.6.0-blue)
 ![Arch Linux](https://img.shields.io/badge/Arch_Linux-1793D1?logo=archlinux&logoColor=white)
 ![Hyprland](https://img.shields.io/badge/Hyprland-Lua-58E1FF)
 [![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-green)](LICENSE)
@@ -34,7 +34,7 @@ Configuración completa para **Arch Linux + Hyprland** (config en Lua): barra co
 - **Menú de red:** Wi-Fi con barras de señal, redes ocultas, cable y configuración avanzada.
 - **Capturas de pantalla:** área, pantalla o ventana; notificación con vista previa y botones Abrir / Carpeta / Editar / Borrar.
 - **Pantalla de bloqueo (`zero-lock`):** 5 estilos (tarjetas, minimal, centrado, terminal, panel) y un menú para elegir fondo (con explorador de archivos y vista previa), desenfoque, brillo, tamaño, reloj 12/24 h, foto y qué elementos mostrar; sigue tu paleta.
-- **Notificaciones (SwayNC)** y **fondos de pantalla (awww)** con selector de miniaturas.
+- **Notificaciones (SwayNC)** y **fondos de pantalla** con selector de miniaturas: imágenes, **GIF animados** (awww) y **videos** (mpvpaper). Un video funciona como cualquier fondo: tiene su propia paleta, sale en el lanzador y en la pantalla de bloqueo, y se pausa solo cuando lo tapa una ventana a pantalla completa.
 - **Bloqueo automático** a los 10 minutos (hypridle) con la misma pantalla de `zero-lock`.
 - **Historial del portapapeles** (cliphist) con texto e imágenes.
 - **Apps GTK con tu paleta:** Thunar y las demás apps GTK cambian de color y de modo claro/oscuro junto con todo lo demás.
@@ -237,6 +237,30 @@ barra-estilo.sh lista         # ver todos
 ```
 
 Cada estilo es un archivo en `~/.config/ags/estilos/`. Para crear el tuyo, copia uno con otro nombre, agrégalo a la lista `ESTILOS` de `barra-estilo.sh` y usa los colores de la paleta (`@fondo`, `@acento`, `@acento2`, `@sombra`…).
+
+## Fondos animados y en video
+
+Mete tus videos (mp4, webm, mkv, mov, m4v, avi) o GIF en `~/.config/wallpapers/`, o elígelos de cualquier carpeta con `Super + Shift + I`. En `Super + W` los videos llevan ▶ y su miniatura.
+
+- **GIF:** los anima awww, sin nada extra.
+- **Videos:** los reproduce **mpvpaper** (el instalador lo pone), en bucle y sin sonido. Debajo queda un cuadro del video como imagen, así que el cambio de fondo se ve con la transición de siempre y nunca hay un parpadeo negro.
+- **Todo sigue funcionando:** cada video tiene su paleta (`Super + Alt + I`), y el panel del lanzador y la pantalla de bloqueo usan un cuadro suyo.
+- **No se duplican en tu disco:** los videos que eliges de otra carpeta se **enlazan** en vez de copiarse (pesan mucho). Si borras o mueves el original, sale de tu lista.
+
+```bash
+wall.sh ~/Videos/lluvia.mp4    # ponerlo de fondo (y agregarlo a tu lista)
+wall.sh video alternar         # pausar / reanudar  (también: pausa, seguir)
+wall.sh video parar            # quitar el video y dejar su cuadro como imagen (vuelve al reiniciar sesión)
+```
+
+Para ahorrar batería, el video se pausa solo mientras hay una ventana a pantalla completa. Se ajusta en `~/.config/rice-paletas/ajustes.conf`:
+
+```bash
+VIDEO_PAUSA=FULL   # FULL: pantalla completa · MAX: también maximizadas · ACTIVE: con cualquier ventana enfocada · no: nunca
+VIDEO_SONIDO=0     # 1 = que suene
+```
+
+`ACTIVE` es la que más ahorra: el video solo se mueve cuando estás viendo el escritorio. (`MAX` y `ACTIVE` necesitan un mpvpaper reciente; con uno viejo se usa la pausa básica.)
 
 ## Panel de control
 

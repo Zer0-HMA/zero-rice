@@ -1,7 +1,7 @@
 # ZERO — a Hyprland rice
 
 [![Revisar](https://github.com/Zer0-HMA/zero-rice/actions/workflows/revisar.yml/badge.svg)](https://github.com/Zer0-HMA/zero-rice/actions/workflows/revisar.yml)
-![Version](https://img.shields.io/badge/version-0.5.2-blue)
+![Version](https://img.shields.io/badge/version-0.6.0-blue)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 *[Versión en español](README.md)*
@@ -18,6 +18,7 @@ A complete setup for **Arch Linux + Hyprland** (Lua config): an AGS bar, a Rofi 
 - **Bar (AGS v3):** user (turns white when you're root), workspaces, clock with calendar, media, network (with Tailscale), CPU/RAM/temperature, volume, battery, tray, palettes, notifications and power menu. A watchdog restarts it if it crashes, and it repaints itself live when you switch palettes.
 - **6 bar styles** (`Super + Shift + B` or right-click the palette button): islands, floating, block, neon, glass and minimal, independent from the palette. Clock, network and system expand on hover, and the media module has an audio spectrum.
 - **Control center** (`Super + A` or the settings button): Wi-Fi, bluetooth, do not disturb, microphone, night light and Tailscale toggles; volume and brightness; media with cover art; calendar and shortcuts to every rice menu.
+- **Animated and video wallpapers:** GIFs (awww) and videos (mpvpaper: mp4, webm, mkv…). A video works like any wallpaper: it gets its own palette, shows up in the launcher and the lock screen, and pauses itself behind fullscreen windows. `wall.sh video alternar` pauses/resumes.
 - **Neovim with LazyVim** that follows your palette: switch palettes and every open Neovim repaints itself. `Space + z` shortcuts change palette and bar style from the editor.
 - **Launcher (Rofi):** greeting panel with clock, **local weather** and PC stats; app grid with Apps / Commands / Files tabs.
 - **48 palettes:** Catppuccin, Tokyo Night, Nord, Gruvbox, Rosé Pine, Dracula, Kanagawa and more — plus **one palette per wallpaper image** you own. Add your own in one line, or theme a new app by dropping in a `.tpl` template.
