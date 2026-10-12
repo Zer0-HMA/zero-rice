@@ -215,6 +215,8 @@ EOF
 
 # ───────────────────────── generar y poner ─────────────────────────
 poner_fondo() {
+  # wall.sh sabe poner imágenes y videos (y apagar el video si pasas a una imagen)
+  if [[ -x "$LIB/../wall.sh" ]]; then "$LIB/../wall.sh" _poner "$1" grow >/dev/null 2>&1 && return 0; fi
   local W_BIN; command -v awww >/dev/null 2>&1 && W_BIN=awww || W_BIN=swww
   command -v "$W_BIN" >/dev/null 2>&1 || return 0
   "$W_BIN" query &>/dev/null || { setsid -f "$W_BIN-daemon" >/dev/null 2>&1; sleep 1; }

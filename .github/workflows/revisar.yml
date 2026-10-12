@@ -34,6 +34,9 @@ jobs:
       - name: zero-lock bloquea aunque hyprlock se cuelgue o se caiga (bug de hyprlock 0.9.6)
         run: bash .github/pruebas/zero-lock-bloqueo.sh
 
+      - name: Fondos en video (wall.sh con awww, mpvpaper y ffmpeg simulados)
+        run: bash .github/pruebas/fondos-video.sh
+
       - name: Sintaxis de Lua
         run: |
           sudo apt-get install -y -qq lua5.4 >/dev/null

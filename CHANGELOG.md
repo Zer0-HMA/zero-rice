@@ -2,6 +2,22 @@
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [SemVer](https://semver.org/lang/es/).
 
+## [0.6.0] — 2026-10-12
+
+### Agregado
+- **Fondos en video** (mp4, webm, mkv, mov, m4v, avi) con mpvpaper, en bucle y sin sonido. Se eligen como cualquier fondo: `Super + W` (con ▶ y miniatura), `Super + Shift + I` o `wall.sh ~/Videos/x.mp4`. Los GIF animados ya funcionaban con awww.
+- Un video funciona en todo el rice como una imagen gracias a `lib/video.sh` (`cuadro_de`): tiene su propia **paleta** (`Super + Alt + I`, `paleta.sh desde-fondo`), aparece en el **panel del lanzador** y en la **pantalla de bloqueo**.
+- El cambio a un video se ve con la transición de siempre: awww pone primero un cuadro del video y luego el video aparece encima (capa `bottom`), sin parpadeo negro.
+- **Ahorro de batería:** el video se pausa solo con ventanas a pantalla completa. `VIDEO_PAUSA=FULL|MAX|ACTIVE|no` y `VIDEO_SONIDO=0|1` en `ajustes.conf`.
+- `wall.sh video pausa | seguir | alternar | parar`.
+- Los videos de otras carpetas se **enlazan** en tu carpeta de fondos en vez de copiarse.
+- Instalador: `ffmpeg` y `socat`, y `mpvpaper` (de los repos oficiales si está ahí, si no del AUR).
+- CI: prueba de los fondos en video con awww, mpvpaper y ffmpeg simulados.
+
+### Cambiado
+- Las paletas ponen su fondo a través de `wall.sh`: pasar de un video a una paleta normal apaga el video.
+- `elegir-fondo.sh` ya no duplica la lógica de copiar: se la deja a `wall.sh`.
+
 ## [0.5.2] — 2026-10-12
 
 ### Corregido

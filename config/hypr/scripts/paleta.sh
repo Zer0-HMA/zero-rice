@@ -41,6 +41,8 @@ source "$LIB/color.sh"
 source "$LIB/plantillas.sh"
 # shellcheck source=lib/fondos.sh
 source "$LIB/fondos.sh"
+# shellcheck source=lib/video.sh
+source "$LIB/video.sh"
 # shellcheck source=lib/dinamica.sh
 source "$LIB/dinamica.sh"
 
