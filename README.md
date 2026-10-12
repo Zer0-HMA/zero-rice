@@ -1,7 +1,7 @@
 # ZERO — rice para Hyprland
 
 [![Revisar](https://github.com/Zer0-HMA/zero-rice/actions/workflows/revisar.yml/badge.svg)](https://github.com/Zer0-HMA/zero-rice/actions/workflows/revisar.yml)
-![Versión](https://img.shields.io/badge/versión-0.3.0-blue)
+![Versión](https://img.shields.io/badge/versión-0.5.0-blue)
 ![Arch Linux](https://img.shields.io/badge/Arch_Linux-1793D1?logo=archlinux&logoColor=white)
 ![Hyprland](https://img.shields.io/badge/Hyprland-Lua-58E1FF)
 [![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-green)](LICENSE)
@@ -18,6 +18,9 @@ Configuración completa para **Arch Linux + Hyprland** (config en Lua): barra co
 
 - **Look de Hyprland:** bordes con degradado animado, esquinas redondeadas, blur, sombras y animaciones suaves.
 - **Barra (AGS v3):** tu **foto de perfil** y nombre (se pone **blanca cuando eres root**), workspaces 1–5, reloj con calendario, música, red, CPU/RAM/temperatura, volumen, batería, bandeja, paletas, **contador de notificaciones** con No molestar y menú de energía. Tiene un guardián que la levanta sola si se cae.
+- **6 estilos de barra** (`Super + Shift + B` o clic derecho en el botón de paletas): islas, flotante, bloque, neón, vidrio y minimal. Son independientes de la paleta, así que se combinan con las 48, y se cambian en vivo. Reloj, red y sistema se **expanden al pasar el mouse**, y la música trae un **espectro de audio** en tus colores.
+- **Panel de control** (`Super + A` o el botón de ajustes de la barra): Wi-Fi, bluetooth, No molestar, micrófono, luz nocturna y Tailscale con un clic; volumen y brillo; música con portada; calendario y accesos a todos los menús del rice.
+- **Neovim con LazyVim** que **sigue tu paleta**: al cambiar de paleta, todos los Neovim abiertos se repintan solos. Trae el logo de ZERO al iniciar, herramientas para editar el propio rice (bash, CSS, TS, Lua) y atajos `Espacio + z` para cambiar paleta y estilo de barra sin salir del editor.
 - **OSD de volumen y brillo:** aparece en el monitor donde estás, con cualquier forma de cambiarlos (teclas, rueda, pavucontrol).
 - **Workspaces en 3D:** 12 efectos (cubo, carrusel, puerta, túnel, persianas, mosaico…) al cambiar de workspace con `Super + número` o la rueda.
 - **14 estilos de animaciones:** Elástico, Zoom, Cine, Retro, Fluido… con velocidad ajustable, desde un menú.
@@ -65,6 +68,7 @@ El script pregunta antes de cada paso, respalda todo lo que reemplaza en `~/.con
 | `./install.sh --desinstalar` | Quita el rice (no borra paquetes; todo queda respaldado) |
 | `./install.sh --version` | Muestra la versión |
 | `./install.sh --enlazar` | Enlaza `~/.config` al repo en vez de copiar (para desarrollar el rice) |
+| `./install.sh --sin-nvim` | No instala ni toca Neovim |
 
 > Puedes correrlo desde la TTY antes de entrar a Hyprland por primera vez, o desde dentro de Hyprland (se aplica en vivo).
 
@@ -90,7 +94,9 @@ El script pregunta antes de cada paso, respalda todo lo que reemplaza en `~/.con
 | `Super + Shift + I` | Usar una imagen de cualquier carpeta como fondo |
 | `Super + N` | Centro de notificaciones |
 | `Super + Shift + N` | Menú de red |
+| `Super + A` | Panel de control |
 | `Super + B` | Reiniciar la barra |
+| `Super + Shift + B` | Estilo de la barra |
 | `Impr Pant` / `Super + Shift + S` | Captura de un área |
 | `Shift + Impr Pant` | Captura de pantalla completa |
 | `Super + Impr Pant` | Captura de la ventana activa |
@@ -211,6 +217,50 @@ Si la pantalla personalizada no se puede generar a tiempo o hyprlock falla con e
 
 **Workspaces 3D:** `Super + Shift + E` para elegir el efecto (o `Aleatorio`, o `Sin efecto 3D`). Funciona tomando una captura de la pantalla y animándola en una capa de la barra, así que no necesita plugins. Desde la terminal: `ws3d.sh efecto cubo`, `ws3d.sh velocidad rapida`, `ws3d.sh probar`.
 
+## Estilos de la barra
+
+`Super + Shift + B` (o clic derecho en el botón de paletas de la barra) abre el menú. La forma es independiente de los colores: cualquier estilo funciona con cualquier paleta.
+
+| Estilo | Cómo se ve |
+|---|---|
+| `islas` | cada módulo flota por su cuenta (el de siempre) |
+| `flotante` | toda la barra es una sola cápsula flotando |
+| `bloque` | barra sólida clásica, pegada arriba, con línea de acento |
+| `neon` | islas con bordes que brillan en tu color de acento |
+| `vidrio` | islas casi transparentes con el desenfoque de Hyprland |
+| `minimal` | sin fondos: solo texto e iconos sobre tu fondo de pantalla |
+
+```bash
+barra-estilo.sh neon          # uno en específico
+barra-estilo.sh siguiente     # el que sigue (también: anterior, aleatorio)
+barra-estilo.sh lista         # ver todos
+```
+
+Cada estilo es un archivo en `~/.config/ags/estilos/`. Para crear el tuyo, copia uno con otro nombre, agrégalo a la lista `ESTILOS` de `barra-estilo.sh` y usa los colores de la paleta (`@fondo`, `@acento`, `@acento2`, `@sombra`…).
+
+## Panel de control
+
+`Super + A` (o el botón de ajustes de la barra) despliega el panel en el monitor donde estás. Se cierra con `Esc` o con un clic fuera.
+
+- **Botones rápidos:** Wi-Fi, bluetooth, No molestar, micrófono, luz nocturna (hyprsunset, 4500 K) y Tailscale. Los que no aplican a tu equipo no aparecen (por ejemplo, bluetooth sin adaptador).
+- **Volumen y brillo** (el brillo solo en laptops), **música** con portada, controles y barra de avance, y la **fecha**, que despliega el calendario.
+- **Accesos** a los menús de paleta, estilo de barra, fondo, animaciones, captura y portapapeles.
+
+Desde la terminal o tus propios atajos: `ags request panel` (alterna), `ags request panel abrir` o `ags request panel cerrar`.
+
+## Neovim
+
+El instalador pone **LazyVim** en `~/.config/nvim` (si ya tenías una config, la respalda antes de preguntar). Los colores salen de tu paleta: `paleta.sh` escribe `~/.config/rice-nvim/paleta.lua` y Neovim la convierte en un tema base16 y se repinta solo cuando cambia.
+
+| Atajo | Acción |
+|---|---|
+| `Espacio + z + p` | Elegir paleta |
+| `Espacio + z + n` / `a` | Siguiente paleta / aleatoria |
+| `Espacio + z + b` | Estilo de la barra |
+| `Espacio + z + r` | Recargar colores (también `:ZeroColores`) |
+
+Tus cambios van en `~/.config/nvim/lua/plugins/mio.lua` (el instalador nunca lo toca). Si prefieres el fondo opaco en vez del de kitty, pon `vim.g.zero_transparente = false` en `lua/config/options.lua`.
+
 ## Personalizar
 
 - **Tus propios ajustes de Hyprland** (monitores, teclado, más atajos…) van en `~/.config/hypr/mio.lua`. Se carga al final del rice, así que le gana a todo, y **el instalador nunca lo toca**, ni al actualizar. Ejemplo:
@@ -241,6 +291,8 @@ En vez de copiar los archivos a `~/.config`, los **enlaza al repo**: lo que edit
 | Tu ciudad del clima | `~/.local/state/zero-rice/clima` |
 | Tus fotos de perfil | `~/.config/rice-perfil` (no se borran al desinstalar) |
 | Efecto 3D y animaciones elegidas | `~/.config/rice-ws3d` y `~/.config/rice-animaciones` |
+| Estilo de la barra elegido | `~/.config/rice-barra/estilo` |
+| Neovim | `~/.config/nvim` (colores en `~/.config/rice-nvim`) |
 | Caché: clima, ciudades, panel del lanzador, bloqueo | `~/.cache/zero-rice` y `~/.cache/zero-lock` (se pueden borrar sin problema) |
 | Logs | `$XDG_RUNTIME_DIR/zero-rice` y `~/.cache/zero-lock/zero-lock.log` |
 
@@ -288,9 +340,12 @@ zero-rice/
 │   ├── hypr/rice.lua               look, autoinicio y atajos
 │   ├── hypr/hypridle.conf          bloqueo automático
 │   ├── hypr/scripts/               barra, paleta, clima, panel, lanzador, red, captura, wall, elegir-fondo,
-│   │                               temp, portapapeles, perfil, animaciones, ws3d, zero-lock
+│   │                               temp, portapapeles, perfil, animaciones, ws3d, zero-lock, barra-estilo
 │   ├── hypr/scripts/lib/           motor de paletas: color, plantillas, fondos, desde imagen
 │   ├── ags/                        barra (app.tsx + style.css), workspaces 3D (ws3d.tsx + efectos3d.ts)
+│   ├── ags/panel.tsx               panel de control (Super + A)
+│   ├── ags/estilos/                los 6 estilos de la barra
+│   ├── nvim/                       Neovim con LazyVim (lua/zero = puente con la paleta)
 │   ├── rofi/                       lanzador
 │   ├── swaync/                     notificaciones
 │   ├── terminal/                   bienvenida de la terminal

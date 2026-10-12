@@ -286,5 +286,7 @@ command -v nmcli >/dev/null 2>&1 || { notificar "No encontré nmcli" "Instala ne
 
 case "${1:-menu}" in
   avanzado) avanzado ;;
+  tailscale)   # lo usa el panel de control: conecta o desconecta según cómo esté
+    if [[ "$(ts_estado)" == Running ]]; then ts_desconectar; else ts_conectar; fi ;;
   *)        principal ;;
 esac

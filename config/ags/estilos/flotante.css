@@ -1,0 +1,19 @@
+/* Estilo «flotante» — toda la barra es una sola cápsula que flota sobre el escritorio.
+   Los módulos dejan de ser islas y se vuelven zonas dentro de la cápsula. */
+.barra .contenedor {
+  background-color: alpha(@fondo, 0.86);
+  border: 1px solid alpha(@acento, 0.28);
+  border-radius: 18px;
+  padding: 3px 6px;
+  box-shadow: 0 6px 16px alpha(@sombra, 0.55);
+}
+.barra .modulo {
+  background-color: transparent;
+  border-color: transparent;
+  border-radius: 12px;
+  padding: 3px 10px;
+}
+.barra .modulo:hover { background-color: alpha(@acento, 0.10); border-color: transparent; }
+.barra .workspaces { background-color: alpha(@fondo2, 0.70); }
+.barra .lanzador { background-image: linear-gradient(135deg, @acento, @acento2); color: @sobre; }
+.barra .lanzador:hover { color: @sobre; }

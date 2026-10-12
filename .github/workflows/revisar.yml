@@ -35,6 +35,13 @@ jobs:
         run: |
           sudo apt-get install -y -qq lua5.4 >/dev/null
           luac5.4 -p config/hypr/rice.lua
+          find config/nvim -name '*.lua' -print0 | xargs -0 -n1 luac5.4 -p
+
+      - name: Estilos de la barra completos
+        run: |
+          for id in $(grep -oE '^  "[a-z]+\|' config/hypr/scripts/barra-estilo.sh | tr -d ' "|'); do
+            [[ -f "config/ags/estilos/$id.css" ]] || { echo "Falta config/ags/estilos/$id.css"; exit 1; }
+          done
 
       - name: Sintaxis de la barra (TypeScript)
         run: npx --yes esbuild@0.24.0 config/ags/*.tsx config/ags/*.ts --loader:.tsx=tsx --jsx=preserve --log-level=error --outdir=/tmp/revision

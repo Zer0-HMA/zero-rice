@@ -1,0 +1,23 @@
+/* Estilo «bloque» — barra sólida clásica, pegada al borde de arriba, de lado a lado.
+   Una línea de acento abajo la separa de las ventanas. */
+.barra .contenedor {
+  margin: 0;
+  padding: 3px 8px;
+  background-color: @fondo;
+  box-shadow: inset 0 -2px alpha(@acento, 0.85);
+}
+.barra .modulo {
+  background-color: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 3px 10px;
+}
+.barra .modulo:hover { background-color: @fondo2; }
+.barra .workspaces button { border-radius: 4px; }
+.barra .workspaces button.activo {
+  background-image: none;
+  background-color: alpha(@acento, 0.18);
+  color: @acento;
+  box-shadow: inset 0 -2px @acento;
+}
+.panel { margin: 0; border-radius: 0 0 0 16px; border-top: none; border-right: none; }
