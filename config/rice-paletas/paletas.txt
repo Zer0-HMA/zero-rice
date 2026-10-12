@@ -2,25 +2,67 @@
 # Para agregar una nueva, copia una línea y cambia los colores.
 # Formato (separado por | ):
 #   id | Nombre | descripción | colores que se muestran en el menú |
-#   fondo | fondo2 | texto-tenue | texto | acento | acento2 | texto-sobre-acento | borde-inactivo
+#   fondo | fondo2 | texto-tenue | texto | acento | acento2 | texto-sobre-acento | borde-inactivo |
+#   rojo | verde | amarillo | azul | magenta | cyan          ← estos 6 son opcionales
 #
 #   fondo      → islas de la barra, menús, notificaciones (si es claro, todo se vuelve tema claro)
 #   fondo2     → hover, buscador de rofi
 #   acento     → bordes de ventanas, iconos, workspace activo
 #   acento2    → segundo color de los degradados
 #   texto-sobre-acento → el texto encima del workspace activo
+#   rojo…cyan  → colores "reales" para alertas (batería baja, temperatura alta, confirmar apagar)
+#                y los 16 colores de la terminal (ls, git, btop...). Si los omites, se usan unos
+#                genéricos que no siempre combinan con tu paleta.
+#
+# Pruébalas con:  paleta.sh <id>  ·  paleta.sh lista  ·  paleta.sh siguiente  ·  paleta.sh aleatoria
 
-acero|Acero|azul acero con negro profundo|#d1dbe4,#a3b7ca,#7593af,#476f95,#000000|#05080b|#16212c|#7593af|#d1dbe4|#a3b7ca|#476f95|#05080b|#16212c
-carbon|Carbón|negros y grises, modo sigilo|#2d2c31,#232324,#1d1d19,#121817,#040708|#040708|#232324|#6c6c72|#c9c9cd|#9a9aa1|#2d2c31|#040708|#1d1d19
-nieve|Nieve|blanco puro y cálido, minimalista|#d1d1d3,#e1dbd6,#e2e2e4,#f9f6f2,#fefefe|#f9f6f2|#e2e2e4|#8e8b88|#2b2a29|#3a3a3c|#a8a29c|#fefefe|#d1d1d3
-niebla|Niebla|tema claro, azul grisáceo|#406682,#607e96,#7f96aa,#9eafbf,#bec9d4,#dee4e9|#dee4e9|#bec9d4|#607e96|#2a4357|#406682|#7f96aa|#f4f7f9|#9eafbf
-vino|Vino|carmesí con azul marino|#39546a,#384a5c,#b60033,#98062d,#800022,#57000d|#11171e|#384a5c|#7f93a6|#efe2e6|#b60033|#57000d|#fbeef1|#1f2b36
-lavanda|Lavanda|lilas suaves y apagados|#af92b5,#8b7991,#6f597a,#624b6e,#503d5c|#211a27|#503d5c|#8b7991|#ece2f0|#af92b5|#6f597a|#1a141f|#3a2d44
-orquidea|Orquídea|del negro al lila brillante|#130e14,#392b3f,#604869,#876494,#ad81be,#d49ee9|#130e14|#392b3f|#876494|#f2e4f8|#d49ee9|#876494|#130e14|#2a1f2e
-neon|Neón|el original: cyan y rosa|#0b0b12,#1a1a28,#22d3ee,#a78bfa,#ec4899|#0b0b12|#1a1a28|#8a8aa3|#e6e6f0|#22d3ee|#ec4899|#0b0b12|#2a2a3a
-mono|Monocromático|grises plateados|#0d0e0e,#353839,#5d6263,#848b8e,#acb5b8,#d3dfe3|#0d0e0e|#353839|#848b8e|#d3dfe3|#d3dfe3|#848b8e|#0d0e0e|#353839
-catppuccin|Catppuccin Mocha|pastel suavecito|#11111b,#313244,#cba6f7,#f5c2e7,#89b4fa,#cdd6f4|#1e1e2e|#313244|#7f849c|#cdd6f4|#cba6f7|#89b4fa|#11111b|#313244
-tokyo|Tokyo Night|azul y morado nocturno|#16161e,#24283b,#565f89,#7aa2f7,#bb9af7,#c0caf5|#1a1b26|#24283b|#737aa2|#c0caf5|#7aa2f7|#bb9af7|#16161e|#24283b
-nord|Nord|frío y nórdico|#2e3440,#3b4252,#4c566a,#5e81ac,#88c0d0,#eceff4|#2e3440|#3b4252|#8590a6|#eceff4|#88c0d0|#5e81ac|#2e3440|#3b4252
-gruvbox|Gruvbox|retro cálido, amarillo y naranja|#282828,#3c3836,#fb4934,#fe8019,#fabd2f,#ebdbb2|#282828|#3c3836|#a89984|#ebdbb2|#fabd2f|#fe8019|#282828|#3c3836
-rosepine|Rosé Pine|rosa y lila elegante|#191724,#26233a,#eb6f92,#ebbcba,#c4a7e7,#9ccfd8|#191724|#26233a|#908caa|#e0def4|#ebbcba|#c4a7e7|#191724|#26233a
+acero|Acero|azul acero con negro profundo|#d1dbe4,#a3b7ca,#7593af,#476f95,#000000|#05080b|#16212c|#7593af|#d1dbe4|#a3b7ca|#476f95|#05080b|#16212c|#e07a7a|#7fbf9a|#d9c27a|#7593af|#a78bba|#6fb7c9
+carbon|Carbón|negros y grises, modo sigilo|#2d2c31,#232324,#1d1d19,#121817,#040708|#040708|#232324|#6c6c72|#c9c9cd|#9a9aa1|#2d2c31|#040708|#1d1d19|#d16d6d|#7fae8b|#cdb97a|#7b95b5|#a58bb5|#78aeb0
+nieve|Nieve|blanco puro y cálido, minimalista|#d1d1d3,#e1dbd6,#e2e2e4,#f9f6f2,#fefefe|#f9f6f2|#e2e2e4|#8e8b88|#2b2a29|#3a3a3c|#a8a29c|#fefefe|#d1d1d3|#c0392b|#3d8b5f|#b8860b|#3a6ea5|#8e44ad|#1f8a8a
+niebla|Niebla|tema claro, azul grisáceo|#406682,#607e96,#7f96aa,#9eafbf,#bec9d4,#dee4e9|#dee4e9|#bec9d4|#607e96|#2a4357|#406682|#7f96aa|#f4f7f9|#9eafbf|#b5483f|#3f7f5f|#a9852e|#406682|#7a5a94|#2f7f86
+vino|Vino|carmesí con azul marino|#39546a,#384a5c,#b60033,#98062d,#800022,#57000d|#11171e|#384a5c|#7f93a6|#efe2e6|#b60033|#57000d|#fbeef1|#1f2b36|#e0506f|#5f9f7f|#d0a85c|#7f93a6|#c0527a|#6fa8b0
+lavanda|Lavanda|lilas suaves y apagados|#af92b5,#8b7991,#6f597a,#624b6e,#503d5c|#211a27|#503d5c|#8b7991|#ece2f0|#af92b5|#6f597a|#1a141f|#3a2d44|#d9788a|#8fb89a|#d7be8a|#8b9cd0|#af92b5|#8bc0c8
+orquidea|Orquídea|del negro al lila brillante|#130e14,#392b3f,#604869,#876494,#ad81be,#d49ee9|#130e14|#392b3f|#876494|#f2e4f8|#d49ee9|#876494|#130e14|#2a1f2e|#e0708f|#8fc0a0|#e0c080|#8a9fe0|#d49ee9|#8fd0d8
+neon|Neón|el original: cyan y rosa|#0b0b12,#1a1a28,#22d3ee,#a78bfa,#ec4899|#0b0b12|#1a1a28|#8a8aa3|#e6e6f0|#22d3ee|#ec4899|#0b0b12|#2a2a3a|#f87171|#4ade80|#facc15|#60a5fa|#ec4899|#22d3ee
+mono|Monocromático|grises plateados|#0d0e0e,#353839,#5d6263,#848b8e,#acb5b8,#d3dfe3|#0d0e0e|#353839|#848b8e|#d3dfe3|#d3dfe3|#848b8e|#0d0e0e|#353839|#b58a8a|#8aab8f|#b5ab8a|#8a9fb5|#a58ab5|#8ab5b5
+catppuccin|Catppuccin Mocha|pastel suavecito|#11111b,#313244,#cba6f7,#f5c2e7,#89b4fa,#cdd6f4|#1e1e2e|#313244|#7f849c|#cdd6f4|#cba6f7|#89b4fa|#11111b|#313244|#f38ba8|#a6e3a1|#f9e2af|#89b4fa|#f5c2e7|#94e2d5
+tokyo|Tokyo Night|azul y morado nocturno|#16161e,#24283b,#565f89,#7aa2f7,#bb9af7,#c0caf5|#1a1b26|#24283b|#737aa2|#c0caf5|#7aa2f7|#bb9af7|#16161e|#24283b|#f7768e|#9ece6a|#e0af68|#7aa2f7|#bb9af7|#7dcfff
+nord|Nord|frío y nórdico|#2e3440,#3b4252,#4c566a,#5e81ac,#88c0d0,#eceff4|#2e3440|#3b4252|#8590a6|#eceff4|#88c0d0|#5e81ac|#2e3440|#3b4252|#bf616a|#a3be8c|#ebcb8b|#81a1c1|#b48ead|#88c0d0
+gruvbox|Gruvbox|retro cálido, amarillo y naranja|#282828,#3c3836,#fb4934,#fe8019,#fabd2f,#ebdbb2|#282828|#3c3836|#a89984|#ebdbb2|#fabd2f|#fe8019|#282828|#3c3836|#fb4934|#b8bb26|#fabd2f|#83a598|#d3869b|#8ec07c
+rosepine|Rosé Pine|rosa y lila elegante|#191724,#26233a,#eb6f92,#ebbcba,#c4a7e7,#9ccfd8|#191724|#26233a|#908caa|#e0def4|#ebbcba|#c4a7e7|#191724|#26233a|#eb6f92|#3e8fb0|#f6c177|#9ccfd8|#c4a7e7|#ebbcba
+
+# ── Más paletas ──
+dracula|Dracula|morado y rosa, el clásico oscuro|#282a36,#44475a,#bd93f9,#ff79c6,#f8f8f2|#282a36|#44475a|#7385c0|#f8f8f2|#bd93f9|#ff79c6|#282a36|#44475a|#ff5555|#50fa7b|#f1fa8c|#bd93f9|#ff79c6|#8be9fd
+latte|Catppuccin Latte|pastel claro y cremoso|#eff1f5,#ccd0da,#8839ef,#1e66f5,#4c4f69|#eff1f5|#ccd0da|#7c7f93|#4c4f69|#8839ef|#1e66f5|#eff1f5|#bcc0cc|#d20f39|#40a02b|#df8e1d|#1e66f5|#ea76cb|#179299
+frappe|Catppuccin Frappé|pastel, más gris|#303446,#414559,#ca9ee6,#8caaee,#c6d0f5|#303446|#414559|#838ba7|#c6d0f5|#ca9ee6|#8caaee|#232634|#414559|#e78284|#a6d189|#e5c890|#8caaee|#f4b8e4|#81c8be
+macchiato|Catppuccin Macchiato|pastel profundo|#24273a,#363a4f,#c6a0f6,#8aadf4,#cad3f5|#24273a|#363a4f|#8087a2|#cad3f5|#c6a0f6|#8aadf4|#181926|#363a4f|#ed8796|#a6da95|#eed49f|#8aadf4|#f5bde6|#8bd5ca
+rosepine-moon|Rosé Pine Moon|rosa y lila, más cálido|#232136,#393552,#ea9a97,#c4a7e7,#e0def4|#232136|#393552|#908caa|#e0def4|#ea9a97|#c4a7e7|#232136|#393552|#eb6f92|#3e8fb0|#f6c177|#9ccfd8|#c4a7e7|#ea9a97
+rosepine-dawn|Rosé Pine Dawn|tema claro, rosa y crema|#faf4ed,#f2e9e1,#907aa9,#d7827e,#575279|#faf4ed|#f2e9e1|#797593|#575279|#907aa9|#d7827e|#faf4ed|#dfdad9|#b4637a|#286983|#ea9d34|#56949f|#907aa9|#d7827e
+tokyo-storm|Tokyo Night Storm|azul noche, más claro|#24283b,#2f334d,#7aa2f7,#bb9af7,#c0caf5|#24283b|#2f334d|#737aa2|#c0caf5|#7aa2f7|#bb9af7|#1f2335|#292e42|#f7768e|#9ece6a|#e0af68|#7aa2f7|#bb9af7|#7dcfff
+tokyo-day|Tokyo Night Day|tema claro, azul y violeta|#e1e2e7,#c4c8da,#2e7de9,#9854f1,#2f55a8|#e1e2e7|#c4c8da|#6172b0|#2f55a8|#2e7de9|#9854f1|#e1e2e7|#c4c8da|#f52a65|#587539|#8c6c3e|#2e7de9|#9854f1|#007197
+kanagawa|Kanagawa|la gran ola, tinta japonesa|#1f1f28,#2a2a37,#7e9cd8,#d27e99,#dcd7ba|#1f1f28|#2a2a37|#727169|#dcd7ba|#7e9cd8|#d27e99|#16161d|#2a2a37|#e46876|#98bb6c|#e6c384|#7e9cd8|#957fb8|#7aa89f
+everforest|Everforest|verde bosque, descansa la vista|#2d353b,#3d484d,#a7c080,#7fbbb3,#d3c6aa|#2d353b|#3d484d|#859289|#d3c6aa|#a7c080|#7fbbb3|#2d353b|#3d484d|#e67e80|#a7c080|#dbbc7f|#7fbbb3|#d699b6|#83c092
+solarized|Solarized Dark|el clásico teal oscuro|#002b36,#073642,#268bd2,#2aa198,#93a1a1|#002b36|#073642|#738a91|#93a1a1|#268bd2|#2aa198|#002b36|#073642|#dc322f|#859900|#b58900|#268bd2|#d33682|#2aa198
+solarized-light|Solarized Light|tema claro, crema y teal|#fdf6e3,#eee8d5,#268bd2,#2aa198,#586e75|#fdf6e3|#eee8d5|#7a8e94|#586e75|#268bd2|#2aa198|#fdf6e3|#eee8d5|#dc322f|#859900|#b58900|#268bd2|#d33682|#2aa198
+onedark|One Dark|el de Atom, azul y violeta|#282c34,#3e4451,#61afef,#c678dd,#abb2bf|#282c34|#3e4451|#7f848e|#abb2bf|#61afef|#c678dd|#282c34|#3e4451|#e06c75|#98c379|#e5c07b|#61afef|#c678dd|#56b6c2
+ayu|Ayu Mirage|amarillo cálido sobre azul grisáceo|#1f2430,#2d3640,#ffcc66,#ffa759,#cccac2|#1f2430|#2d3640|#707a8c|#cccac2|#ffcc66|#ffa759|#1f2430|#2d3640|#f28779|#d5ff80|#ffcc66|#73d0ff|#dfbfff|#95e6cb
+oxocarbon|Oxocarbon|IBM Carbon, frío y limpio|#161616,#262626,#78a9ff,#be95ff,#f2f4f8|#161616|#262626|#7d7d7d|#f2f4f8|#78a9ff|#be95ff|#161616|#262626|#ee5396|#42be65|#f1c21b|#78a9ff|#be95ff|#3ddbd9
+synthwave|Synthwave '84|rosa y cyan retro ochentero|#262335,#34294f,#ff7edb,#36f9f6,#f4eeee|#262335|#34294f|#848bbd|#f4eeee|#ff7edb|#36f9f6|#262335|#34294f|#fe4450|#72f1b8|#fede5d|#03edf9|#ff7edb|#36f9f6
+vaporwave|Vaporwave|rosa chicle y cyan sobre violeta|#1a1033,#2a1a4d,#ff71ce,#01cdfe,#f3e9ff|#1a1033|#2a1a4d|#9d8cc4|#f3e9ff|#ff71ce|#01cdfe|#1a1033|#2a1a4d|#ff6b6b|#05ffa1|#fffb96|#01cdfe|#b967ff|#7df9ff
+cyberpunk|Cyberpunk|amarillo eléctrico y cyan|#0d0221,#1a0b3b,#fcee0a,#00f0ff,#eaf2ff|#0d0221|#1a0b3b|#8a7fb5|#eaf2ff|#fcee0a|#00f0ff|#0d0221|#1a0b3b|#ff2a6d|#05ffa1|#fcee0a|#00b8ff|#d300c5|#00f0ff
+sakura|Sakura|rosa cerezo sobre ciruela|#1f1720,#33242f,#ffb7c5,#f78fb3,#fbe9f0|#1f1720|#33242f|#b08ba0|#fbe9f0|#ffb7c5|#f78fb3|#1f1720|#33242f|#ff6b81|#a8d8a0|#ffd98e|#9ec5fe|#f78fb3|#8fe3d9
+aurora|Aurora|aurora boreal, verde agua y violeta|#0b1220,#16233a,#5eead4,#a78bfa,#e6f1ff|#0b1220|#16233a|#7f93b0|#e6f1ff|#5eead4|#a78bfa|#0b1220|#16233a|#fb7185|#4ade80|#fde047|#60a5fa|#a78bfa|#5eead4
+matrix|Matrix|verde terminal, hacker de película|#020a04,#0b1f10,#00ff66,#00b84a,#b6ffc8|#020a04|#0b1f10|#4a9a60|#b6ffc8|#00ff66|#00b84a|#020a04|#0b1f10|#ff5f5f|#00ff66|#d7ff5f|#5fd7ff|#d75fff|#5fffd7
+ambar|Ámbar|monitor CRT retro|#120c02,#2a1c06,#ffb000,#ff7a00,#ffd58a|#120c02|#2a1c06|#a98338|#ffd58a|#ffb000|#ff7a00|#120c02|#2a1c06|#ff5f3a|#b5d33d|#ffb000|#6fa8dc|#e07aa0|#6fd3c0
+atardecer|Atardecer|coral y durazno sobre ciruela|#1c1226,#2e1b3d,#ff6f61,#ffb347,#fff0e6|#1c1226|#2e1b3d|#b08aa8|#fff0e6|#ff6f61|#ffb347|#1c1226|#2e1b3d|#ff5d5d|#9bd47a|#ffc857|#7aa7ff|#e879a8|#6ee7d3
+oceano|Océano|azul profundo y turquesa|#07131f,#0f2a40,#38bdf8,#2dd4bf,#dff3ff|#07131f|#0f2a40|#6f93ad|#dff3ff|#38bdf8|#2dd4bf|#07131f|#0f2a40|#f87171|#4ade80|#fbbf24|#38bdf8|#a78bfa|#2dd4bf
+bosque|Bosque|musgo y dorado|#0e1a12,#1b2d21,#7bc86c,#d9c27a,#e3f1e4|#0e1a12|#1b2d21|#7a9a82|#e3f1e4|#7bc86c|#d9c27a|#0e1a12|#1b2d21|#e07a6a|#7bc86c|#d9c27a|#6aa7c9|#b58ac0|#6ac9b0
+matcha|Matcha|tema claro, té verde y crema|#f3f1e7,#e1ddc9,#5f8a4b,#7f9c4a,#2f3a2a|#f3f1e7|#e1ddc9|#7b8068|#2f3a2a|#5f8a4b|#7f9c4a|#f3f1e7|#cfcbb5|#b5524a|#5f8a4b|#b8942e|#4a7a99|#8a5a8a|#3f8a7f
+cafe|Café|marrones tostados y crema|#1b1410,#2e2219,#d4a373,#c8794d,#f1e4d3|#1b1410|#2e2219|#a58b74|#f1e4d3|#d4a373|#c8794d|#1b1410|#2e2219|#d9786a|#9bb36b|#e0b45f|#7fa3c0|#c490a8|#7fbfb0
+gruvbox-light|Gruvbox Light|tema claro, retro cálido|#fbf1c7,#ebdbb2,#d65d0e,#b57614,#3c3836|#fbf1c7|#ebdbb2|#7c6f64|#3c3836|#d65d0e|#b57614|#fbf1c7|#d5c4a1|#cc241d|#98971a|#d79921|#458588|#b16286|#689d6a
+github|GitHub Dark|el oscuro de GitHub|#0d1117,#21262d,#58a6ff,#bc8cff,#e6edf3|#0d1117|#21262d|#8b949e|#e6edf3|#58a6ff|#bc8cff|#0d1117|#21262d|#ff7b72|#3fb950|#d29922|#58a6ff|#bc8cff|#39c5cf
+poimandres|Poimandres|menta y azul hielo|#1b1e28,#303340,#5de4c7,#add7ff,#e4f0fb|#1b1e28|#303340|#767c9d|#e4f0fb|#5de4c7|#add7ff|#1b1e28|#303340|#d0679d|#5de4c7|#fffac2|#89ddff|#f087bd|#91b4d5
+material|Material Ocean|azul marino de Material|#0f111a,#1a1c25,#82aaff,#c792ea,#c8d0f0|#0f111a|#1a1c25|#717cb4|#c8d0f0|#82aaff|#c792ea|#0f111a|#1a1c25|#ff5370|#c3e88d|#ffcb6b|#82aaff|#c792ea|#89ddff
+monokai|Monokai Pro|rosa y amarillo sobre gris cálido|#2d2a2e,#403e41,#ffd866,#ff6188,#fcfcfa|#2d2a2e|#403e41|#939293|#fcfcfa|#ffd866|#ff6188|#2d2a2e|#403e41|#ff6188|#a9dc76|#ffd866|#fc9867|#ab9df2|#78dce8
+horizon|Horizon|rojo coral y durazno|#1c1e26,#2e303e,#e95678,#fab795,#cbced0|#1c1e26|#2e303e|#6c6f93|#cbced0|#e95678|#fab795|#1c1e26|#2e303e|#e95678|#29d398|#fac29a|#26bbd9|#b877db|#59e1e3
+sangre|Sangre|negro con carmesí intenso|#0c0506,#240c10,#e11d48,#fb7185,#f5e6e8|#0c0506|#240c10|#9a6a70|#f5e6e8|#e11d48|#fb7185|#fff1f2|#240c10|#e11d48|#6ea56e|#e0a458|#6b8fb5|#c0658f|#5fa8a8

@@ -1,35 +1,22 @@
 # ZERO — rice para Hyprland
 
-[![Revisar](https://github.com/Zer0-HMA/zero-rice/actions/workflows/revisar.yml/badge.svg)](https://github.com/Zer0-HMA/zero-rice/actions/workflows/revisar.yml)
-![Versión](https://img.shields.io/badge/versión-0.2.0-blue)
-![Arch Linux](https://img.shields.io/badge/Arch_Linux-1793D1?logo=archlinux&logoColor=white)
-![Hyprland](https://img.shields.io/badge/Hyprland-Lua-58E1FF)
-[![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-green)](LICENSE)
-
-*[English version](README.en.md)*
-
-Configuración completa para **Arch Linux + Hyprland** (config en Lua): barra con AGS, lanzador con clima y estadísticas, 14 paletas de colores que cambian todo el escritorio con un atajo, menú de red, capturas de pantalla con vista previa y más.
+Configuración completa para **Arch Linux + Hyprland** (config en Lua): barra con AGS, lanzador con clima y estadísticas, 48 paletas de colores que cambian todo el escritorio con un atajo, menú de red, capturas de pantalla con vista previa y más.
 
 ![Lanzador](capturas/lanzador.png)
 
 ## Qué trae
 
 - **Look de Hyprland:** bordes con degradado animado, esquinas redondeadas, blur, sombras y animaciones suaves.
-- **Barra (AGS v3):** tu **foto de perfil** y nombre (se pone **blanca cuando eres root**), workspaces 1–5, reloj con calendario, música, red, CPU/RAM/temperatura, volumen, batería, bandeja, paletas, **contador de notificaciones** con No molestar y menú de energía. Tiene un guardián que la levanta sola si se cae.
-- **OSD de volumen y brillo:** aparece en el monitor donde estás, con cualquier forma de cambiarlos (teclas, rueda, pavucontrol).
-- **Workspaces en 3D:** 12 efectos (cubo, carrusel, puerta, túnel, persianas, mosaico…) al cambiar de workspace con `Super + número` o la rueda.
-- **14 estilos de animaciones:** Elástico, Zoom, Cine, Retro, Fluido… con velocidad ajustable, desde un menú.
+- **Barra (AGS v3):** usuario (se pone **blanca cuando eres root**), workspaces 1–5, reloj con calendario, música, red, CPU/RAM/temperatura, volumen, batería, bandeja, paletas, notificaciones y menú de energía. Tiene un guardián que la levanta sola si se cae.
 - **Lanzador (Rofi):** panel con saludo según la hora, reloj, **clima de tu ciudad** y estadísticas de tu PC; apps en cuadrícula y pestañas Apps / Comandos / Archivos.
-- **14 paletas de colores:** cambian bordes, barra, lanzador, menús, notificaciones, terminal y fondo de pantalla al mismo tiempo. Puedes agregar las tuyas.
+- **48 paletas de colores:** cambian bordes, barra, lanzador, menús, notificaciones, terminal (con sus 16 colores) y fondo de pantalla al mismo tiempo. Puedes agregar las tuyas.
+- **Paleta por cada imagen:** cada fondo tuyo guarda su propia paleta (pestaña "Imágenes" del menú); elegirla aplica sus colores y pone esa imagen.
+- **5 estilos de fondo generado:** líneas, malla, aurora, rejilla synthwave y círculos, todos con los colores de tu paleta.
+- **Motor de plantillas:** tematizar una app nueva es agregar un archivo `.tpl`, sin tocar código.
 - **Clima:** detecta tu ciudad por internet, o la eliges de una lista que se filtra mientras escribes.
 - **Menú de red:** Wi-Fi con barras de señal, redes ocultas, cable y configuración avanzada.
 - **Capturas de pantalla:** área, pantalla o ventana; notificación con vista previa y botones Abrir / Carpeta / Editar / Borrar.
 - **Notificaciones (SwayNC)** y **fondos de pantalla (awww)** con selector de miniaturas.
-- **Pantalla de bloqueo (hyprlock)** con los colores de tu paleta, y bloqueo automático a los 10 minutos (hypridle).
-- **Historial del portapapeles** (cliphist) con texto e imágenes.
-- **Apps GTK con tu paleta:** Thunar y las demás apps GTK cambian de color y de modo claro/oscuro junto con todo lo demás.
-- **Tailscale** en el menú de red y en la barra, si lo tienes instalado.
-- Lo que un escritorio necesita para el día a día: agente de **polkit** (ventanas de contraseña) y **portal de escritorio** (compartir pantalla en Discord, Meet, OBS).
 
 ## Requisitos
 
@@ -56,8 +43,6 @@ El script pregunta antes de cada paso, respalda todo lo que reemplaza en `~/.con
 | `./install.sh --paleta=tokyo` | Elige la paleta inicial |
 | `./install.sh --actualizar` | Baja lo último del repo y actualiza (conserva tu paleta, tu fondo y tu ciudad) |
 | `./install.sh --desinstalar` | Quita el rice (no borra paquetes; todo queda respaldado) |
-| `./install.sh --version` | Muestra la versión instalada |
-| `./install.sh --enlazar` | Enlaza `~/.config` al repo en vez de copiar (para desarrollar el rice) |
 
 > Puedes correrlo desde la TTY antes de entrar a Hyprland por primera vez, o desde dentro de Hyprland (se aplica en vivo).
 
@@ -67,16 +52,12 @@ El script pregunta antes de cada paso, respalda todo lo que reemplaza en `~/.con
 |---|---|
 | `Super + R` | Lanzador de apps |
 | `Super + Shift + P` | Cambiar paleta de colores |
-| `Super + Shift + A` | Elegir estilo de animaciones |
-| `Super + Shift + E` | Elegir efecto 3D de los workspaces |
-| `Super + Shift + F` | Foto de perfil y nombre (o clic en tu nombre en la barra) |
-| `Super + 1…0` / `Super + rueda` | Cambiar de workspace (con el efecto 3D que elegiste) |
+| `Super + Ctrl + P` | Siguiente paleta |
+| `Super + Alt + P` | Paleta aleatoria |
 | `Super + Shift + C` | Elegir ciudad del clima |
 | `Super + W` | Elegir fondo de pantalla (con miniaturas) |
 | `Super + Shift + W` | Fondo aleatorio |
 | `Super + N` | Centro de notificaciones |
-| `Super + L` | Bloquear la pantalla |
-| `Super + Shift + V` | Historial del portapapeles |
 | `Super + Shift + N` | Menú de red |
 | `Super + B` | Reiniciar la barra |
 | `Impr Pant` / `Super + Shift + S` | Captura de un área |
@@ -86,29 +67,68 @@ El script pregunta antes de cada paso, respalda todo lo que reemplaza en `~/.con
 
 ## Paletas
 
-![Paletas](capturas/paletas.png)
+![Las 48 paletas](capturas/paletas-todas.png)
 
 Se cambian con `Super + Shift + P`, con el botón de paleta de la barra o desde la terminal:
 
 ```bash
-~/.config/hypr/scripts/paleta.sh tokyo       # una en específico
-~/.config/hypr/scripts/paleta.sh aleatoria   # sorpresa
-~/.config/hypr/scripts/paleta.sh tui         # elegir en la terminal
+~/.config/hypr/scripts/paleta.sh tokyo         # una en específico
+~/.config/hypr/scripts/paleta.sh siguiente     # la que sigue (también: anterior)
+~/.config/hypr/scripts/paleta.sh aleatoria     # sorpresa
+~/.config/hypr/scripts/paleta.sh lista         # ver todas en la terminal
 ```
 
-**Agregar tu propia paleta:** abre `~/.config/rice-paletas/paletas.txt`, copia una línea y cambia los colores. El formato viene explicado al principio del archivo. Si el color de fondo es claro, todo el escritorio se vuelve tema claro automáticamente.
+Las paletas claras (Nieve, Niebla, Catppuccin Latte, Rosé Pine Dawn, Tokyo Night Day, Solarized Light, Matcha, Gruvbox Light) vuelven claro todo el escritorio; la terminal se mantiene oscura y el modo root de la barra se invierte para que siempre se note.
 
-Al principio de `~/.config/hypr/scripts/paleta.sh` puedes elegir qué cambia con la paleta:
+### Paletas de tus imágenes
 
-| Opción | Qué hace |
-|---|---|
-| `CAMBIAR_FONDO=1` | (por defecto) pone el fondo de la paleta solo si tu fondo actual también es de paleta; si elegiste uno con `Super + W`, se respeta |
-| `CAMBIAR_FONDO=2` | siempre pone el fondo de la paleta · `0` nunca toca tu fondo |
-| `TEMA_KITTY=0` | no cambia los colores de kitty |
-| `TEMA_GTK=0` | no cambia los colores de las apps GTK |
-| `TEMA_BLOQUEO=0` | no cambia la pantalla de bloqueo |
+El menú de paletas (`Super + Shift + P`) tiene **dos pestañas**:
 
-Si ya tenías tu propio `hyprlock.conf` o `hypridle.conf`, el rice no los toca.
+- **Paletas:** las 48 de siempre (y las que tú agregues).
+- **Imágenes:** una paleta **por cada fondo tuyo**, con su miniatura. Al elegir una se aplican sus colores y se pone esa imagen de fondo.
+
+Cambias de pestaña con `Alt + 1` / `Alt + 2` o con la primera fila. `Super + Alt + I` abre directo en tus imágenes.
+
+Las imágenes salen de `~/.config/wallpapers/` y de las que agregas con `Super + Shift + I`. Los colores se calculan una sola vez por imagen (y de nuevo solo si la cambias) y se guardan en `~/.config/rice-paletas/imagenes.txt`.
+
+```bash
+paleta.sh imagenes                 # ver la lista
+paleta.sh imagen playa             # esa imagen de fondo + sus colores (por nombre)
+paleta.sh desde-fondo              # solo los colores del fondo que tienes puesto
+paleta.sh desde-fondo foto.jpg     # o de una imagen en específico
+paleta.sh auto on                  # cada fondo nuevo (Super + W) cambia también los colores
+```
+
+`siguiente`, `anterior` y `aleatoria` solo recorren las paletas, no tus imágenes. Para que las paletas de tus imágenes sean de tema claro pon `MODO_IMAGENES=claro` en `~/.config/rice-paletas/ajustes.conf`. Necesita `imagemagick` (el instalador lo pone).
+
+### Fondos generados
+
+Cada paleta genera su propio fondo. Hay 5 estilos: `lineas` (el original), `malla`, `aurora`, `rejilla` (synthwave) y `circulos`.
+
+```bash
+paleta.sh fondo malla        # regenera el fondo de la paleta actual en ese estilo
+paleta.sh fondo aleatorio    # uno al azar
+```
+
+Para dejar uno fijo, crea `~/.config/rice-paletas/ajustes.conf` (el instalador ya lo deja listo) con `ESTILO_FONDO=aurora`. Ahí mismo puedes poner `CAMBIAR_FONDO=0` si no quieres que la paleta toque tu fondo, o `TEMA_KITTY=0` para que no cambie la terminal.
+
+### Agregar tu propia paleta
+
+Abre `~/.config/rice-paletas/paletas.txt`, copia una línea y cambia los colores. El formato viene explicado al principio del archivo. Además de fondo, texto y acentos, cada paleta puede traer **rojo, verde, amarillo, azul, magenta y cyan**: se usan en las alertas (batería baja, temperatura alta, confirmar apagado) y como colores de la terminal. Si los omites, se usan unos genéricos. Si el color de fondo es claro, todo el escritorio se vuelve tema claro automáticamente.
+
+### Tematizar otra app (plantillas)
+
+Los colores no están escritos dentro del script: viven en `~/.config/rice-plantillas/*.tpl`. Cada plantilla es el archivo de configuración de una app con `{{variables}}`, más una cabecera que dice dónde se escribe:
+
+```
+#@ destino: ~/.config/btop/themes/zero.theme
+#@ requiere: cmd btop
+theme[main_bg]="{{fondo}}"
+theme[main_fg]="{{texto}}"
+theme[hi_fg]="{{acento}}"
+```
+
+Al cambiar de paleta se rellenan todas las plantillas. Variables disponibles: `fondo fondo2 tenue texto acento acento2 sobre inactivo rojo verde amarillo azul magenta cyan` y `ansi0` … `ansi15`; formas: `{{acento.hex}}`, `{{acento.rgb}}`, `{{acento.a30}}` (30 % de opacidad), `{{acento.rgba30}}` (CSS) y `{{acento.hypr}}`. La lista completa está en `config/hypr/scripts/lib/plantillas.sh`.
 
 ## Clima
 
@@ -129,64 +149,16 @@ Si ya tenías tu propio `hyprlock.conf` o `hypridle.conf`, el rice no los toca.
   hl.bind("SUPER + T", hl.dsp.exec_cmd("thunar"))
   ```
 
-- **Tus fondos de pantalla** van en `~/.config/wallpapers/` (jpg, png, webp, gif). Elígelos con `Super + W`.
+- **Tus fondos de pantalla** van en `~/.config/wallpapers/` (jpg, png, webp, gif). Elígelos con `Super + W`. Para usar una imagen que está en otra carpeta (Descargas, Imágenes...), `Super + Shift + I` abre un navegador con miniaturas; la imagen se copia a tus fondos. También: `wall.sh /ruta/a/foto.jpg`.
 - **Carpeta de capturas:** `~/Pictures/Capturas` (o la carpeta de imágenes de tu idioma). Se copian solas al portapapeles.
-
-## Perfil, animaciones y workspaces 3D
-
-**Foto de perfil:** con `Super + Shift + F` eliges una foto de tu colección o agregas una de tus Imágenes o Descargas; se recorta en círculo sola y aparece en la barra, el lanzador y la pantalla de bloqueo (`~/.face`). Desde la terminal: `perfil.sh ~/foto.jpg`, `perfil.sh nombre "Humber"`, `perfil.sh quitar`.
-
-**Animaciones:** `Super + Shift + A` abre el menú con los 14 estilos, la velocidad y el borde girando. Desde la terminal: `animaciones.sh elastico`, `animaciones.sh velocidad rapida`, `animaciones.sh probar`.
-
-**Workspaces 3D:** `Super + Shift + E` para elegir el efecto (o `Aleatorio`, o `Sin efecto 3D` para las animaciones normales de Hyprland). Funciona tomando una captura de la pantalla y animándola en una capa de la barra, así que no necesita plugins. Desde la terminal: `ws3d.sh efecto cubo`, `ws3d.sh velocidad rapida`, `ws3d.sh probar`.
-
-## Para desarrollar el rice (modo enlazado)
-
-```bash
-./install.sh --enlazar
-```
-
-En vez de copiar los archivos a `~/.config`, los **enlaza al repo**: lo que edites en `~/.config/hypr/rice.lua` o en la barra queda directo en git, listo para `git commit`. Lo que generan las paletas y las animaciones (`colores.css`, `colores.lua`, `animaciones.lua`…) se queda en `~/.config` y nunca ensucia el repo. Se recuerda entre actualizaciones; para volver a copias normales: `./install.sh --copiar`.
-
-## Dónde se guarda cada cosa
-
-| Qué | Dónde |
-|---|---|
-| Configuración (lo que puedes editar) | `~/.config/hypr`, `~/.config/ags`, `~/.config/rofi`, `~/.config/rice-paletas` |
-| Tus ajustes personales | `~/.config/hypr/mio.lua` (el instalador nunca lo toca) |
-| Estado: paleta actual y tu ciudad | `~/.local/state/zero-rice` |
-| Tus fotos de perfil | `~/.config/rice-perfil` (no se borran al desinstalar) |
-| Efecto 3D y animaciones elegidas | `~/.config/rice-ws3d` y `~/.config/rice-animaciones` |
-| Caché: clima, lista de ciudades, panel del lanzador | `~/.cache/zero-rice` (se puede borrar sin problema) |
-| Logs | `$XDG_RUNTIME_DIR/zero-rice` (se borran al apagar) |
-
-## Privacidad
-
-Para el clima, el rice consulta tu ubicación aproximada por IP a [ip-api.com](https://ip-api.com) (por HTTP, sin cifrar) o, si falla, a [ipinfo.io](https://ipinfo.io). Si prefieres que no se consulte nada, elige tu ciudad con `Super + Shift + C`: así ya no se vuelve a detectar. El clima en sí viene de [Open-Meteo](https://open-meteo.com), que solo recibe las coordenadas de la ciudad.
 
 ## Problemas comunes
 
 **La barra no aparece.** Corre `~/.config/hypr/scripts/barra.sh log` para ver el error. Si dice que falta algo de `Astal`, instala `yay -S libastal-meta`.
 
-**La barra se cae al iniciar sesión, o salen dos.** Revisa que tu `hyprland.lua` no arranque `ags`, `swaync` o el daemon de fondos por su cuenta: el rice ya los arranca. El instalador lo detecta y te ofrece desactivarlos.
-
-**El cursor parpadea o se ve feo en el segundo monitor (NVIDIA).** Pon esto en tu `mio.lua`:
-
-```lua
-hl.env("XCURSOR_THEME", "Bibata-Modern-Classic")
-hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Classic")
-hl.config({ cursor = { no_hardware_cursors = 1 } })
-```
-
-y instala el tema con `yay -S bibata-cursor-theme-bin`.
-
 **Sale una barra roja arriba de la pantalla.** Es un error en la config de Hyprland. Si acabas de editar `mio.lua`, revisa ese archivo.
 
 **El clima dice "no disponible".** Revisa tu internet y elige tu ciudad con `Super + Shift + C`.
-
-**Tailscale dice que necesita permiso.** Para conectarlo y desconectarlo desde el menú sin `sudo`, corre una vez `sudo tailscale set --operator=$USER`.
-
-**Una app no me pide la contraseña de administrador.** Revisa que el agente de polkit esté corriendo: `systemctl --user status hyprpolkitagent`.
 
 **El fondo de pantalla no cambia.** El proyecto `swww` se renombró a `awww`; el instalador instala `awww` desde el AUR, y los scripts usan el que tengas.
 
@@ -195,24 +167,19 @@ y instala el tema con `yay -S bibata-cursor-theme-bin`.
 ```
 zero-rice/
 ├── install.sh                      instalador (instalar / actualizar / desinstalar)
-├── VERSION · CHANGELOG.md · LICENSE
 ├── config/
 │   ├── hypr/rice.lua               look, autoinicio y atajos
-│   ├── hypr/hypridle.conf          bloqueo automático
-│   ├── hypr/scripts/               barra, paleta, clima, panel, lanzador, red, captura, wall,
-│   │                               temp, portapapeles, perfil, animaciones, ws3d
-│   ├── ags/                        barra (app.tsx + style.css), workspaces 3D (ws3d.tsx + efectos3d.ts)
+│   ├── hypr/scripts/               barra, paleta, clima, panel, lanzador, red, captura, wall
+│   ├── hypr/scripts/lib/           motor de paletas: color, plantillas, fondos, desde imagen
+│   ├── ags/                        barra (app.tsx + style.css)
 │   ├── rofi/                       lanzador
 │   ├── swaync/                     notificaciones
-│   └── rice-paletas/paletas.txt    las 14 paletas
+│   ├── rice-plantillas/            una plantilla .tpl por app (barra, rofi, swaync, kitty, hyprland)
+│   └── rice-paletas/paletas.txt    las 48 paletas
 └── capturas/                       imágenes de este README
 ```
 
-Los colores de Hyprland (`colores.lua`), la barra, Rofi, SwayNC, kitty, GTK y hyprlock no están en el repo: los genera `paleta.sh` a partir de la paleta que elijas.
-
-## Contribuir
-
-¿Encontraste un error? [Abre un issue](https://github.com/Zer0-HMA/zero-rice/issues/new/choose) con el log de la barra (`barra.sh log`) y tu versión de Hyprland. Cada cambio pasa por una revisión automática (ShellCheck y sintaxis de Lua) en GitHub Actions.
+Los colores de la barra, Rofi, SwayNC, kitty y Hyprland no están escritos en el repo: `paleta.sh` los genera a partir de las plantillas y de la paleta que elijas.
 
 ## Créditos
 
@@ -221,9 +188,4 @@ Los colores de Hyprland (`colores.lua`), la barra, Rofi, SwayNC, kitty, GTK y hy
 - Lista de ciudades: [GeoNames](https://www.geonames.org) (licencia CC BY 4.0)
 - Ubicación aproximada: [ip-api.com](https://ip-api.com) e [ipinfo.io](https://ipinfo.io)
 - Íconos: [Nerd Fonts](https://www.nerdfonts.com) y [Papirus](https://github.com/PapirusDevelopmentTeam/papirus-icon-theme)
-- Paletas Catppuccin, Tokyo Night, Nord, Gruvbox y Rosé Pine de sus respectivos proyectos
-- Pantalla de bloqueo e inactividad: [hyprlock](https://github.com/hyprwm/hyprlock) y [hypridle](https://github.com/hyprwm/hypridle); portapapeles: [cliphist](https://github.com/sentriz/cliphist)
-
-## Licencia
-
-[MIT](LICENSE) © Zer0-HMA
+- Paletas inspiradas en Catppuccin, Tokyo Night, Nord, Gruvbox, Rosé Pine, Dracula, Kanagawa, Everforest, Solarized, One Dark, Ayu, Oxocarbon, Synthwave '84, GitHub, Poimandres, Material, Monokai Pro y Horizon, de sus respectivos proyectos

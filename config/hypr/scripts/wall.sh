@@ -53,6 +53,11 @@ poner() {
     --transition-duration 1.2 \
     --transition-angle $((RANDOM % 360))
   printf '%s\n' "$img" > "$ESTADO"
+  # Paleta automática (paleta.sh auto on): los colores salen del fondo nuevo.
+  # Solo cuando tú cambias el fondo, no al restaurarlo al iniciar sesión.
+  if [[ "$trans" != none && -f "$HOME/.config/rice-paletas/auto-fondo" ]]; then
+    setsid -f "$HOME/.config/hypr/scripts/paleta.sh" desde-fondo "$img" >/dev/null 2>&1
+  fi
 }
 
 actual() { [[ -f "$ESTADO" ]] && cat "$ESTADO"; }
