@@ -394,8 +394,18 @@ if [[ -f "$CFG/hypr/hypridle.conf" ]] && ! grep -q '(zero-rice)' "$CFG/hypr/hypr
     respaldar "$CFG/hypr/hypridle.conf"
     sed -i -E 's#^([[:space:]]*lock_cmd[[:space:]]*=[[:space:]]*)pidof hyprlock \|\|[[:space:]]*(.*zero-lock(\.sh)? lock)([[:space:]]*($|\#.*))#\1\2 --auto\4#' "$CFG/hypr/hypridle.conf"
     ok "hypridle.conf: lock_cmd actualizado a zero-lock lock --auto (ya no se traba con un hyprlock colgado)"
-  else
-    info "Ya tenías hypridle.conf: no lo toqué (para usar zero-lock pon:  lock_cmd = $S/zero-lock.sh lock --auto)"
+  elif ! grep -qE '^[[:space:]]*lock_cmd.*zero-lock' "$CFG/hypr/hypridle.conf"; then
+    # un hypridle.conf propio que lanza hyprlock directo: con hyprlock 0.9.6 se puede quedar colgado
+    # y bloquear la pantalla para siempre (pidof hyprlock || …). zero-lock lo detecta y lo resuelve.
+    warn "Tu hypridle.conf bloquea sin zero-lock: $(grep -m1 -E '^[[:space:]]*lock_cmd' "$CFG/hypr/hypridle.conf" | sed 's/^[[:space:]]*//')"
+    if grep -qE '^[[:space:]]*lock_cmd' "$CFG/hypr/hypridle.conf" \
+       && preguntar "¿Que el bloqueo automático use zero-lock? (evita el hyprlock colgado; tu archivo se respalda)"; then
+      respaldar "$CFG/hypr/hypridle.conf"
+      sed -i -E "s#^([[:space:]]*lock_cmd[[:space:]]*=).*#\\1 $S/zero-lock.sh lock --auto#" "$CFG/hypr/hypridle.conf"
+      ok "hypridle.conf: lock_cmd = zero-lock.sh lock --auto"
+    else
+      info "No lo toqué. Para usar zero-lock pon:  lock_cmd = $S/zero-lock.sh lock --auto"
+    fi
   fi
 else
   instalar hypr/hypridle.conf "$CFG/hypr/hypridle.conf"

@@ -137,8 +137,9 @@ hl.bind("SUPER + SHIFT + F", hl.dsp.exec_cmd(scripts .. "/perfil.sh menu"))     
 hl.bind("SUPER + SHIFT + A", hl.dsp.exec_cmd(scripts .. "/animaciones.sh menu"))   -- menú de animaciones
 
 -- Pantalla de bloqueo (zero-lock)
-hl.bind("SUPER + L",         hl.dsp.exec_cmd(scripts .. "/zero-lock.sh lock"))     -- bloquear pantalla
-hl.bind("SUPER + SHIFT + L", hl.dsp.exec_cmd(scripts .. "/zero-lock.sh"))          -- personalizar el bloqueo (estilo, fondo, colores)
+-- (con descripción: en Lua, "hyprctl binds" no muestra el comando, y así zero-lock diagnostico los reconoce)
+hl.bind("SUPER + L",         hl.dsp.exec_cmd(scripts .. "/zero-lock.sh lock"), { description = "zero-lock: bloquear" })
+hl.bind("SUPER + SHIFT + L", hl.dsp.exec_cmd(scripts .. "/zero-lock.sh"),      { description = "zero-lock: personalizar el bloqueo" })
 
 -- Fondos de pantalla
 hl.bind("SUPER + W",         hl.dsp.exec_cmd(scripts .. "/wall.sh menu"))

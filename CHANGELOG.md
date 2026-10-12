@@ -2,6 +2,16 @@
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [SemVer](https://semver.org/lang/es/).
 
+## [0.5.2] — 2026-10-12
+
+### Corregido
+- `zero-lock diagnostico` decía que Hyprland "no tenía ningún atajo de bloqueo" aunque sí lo tuviera: con la config en Lua, `hyprctl binds` no muestra el comando del atajo, solo una función. Los atajos de bloqueo de `rice.lua` ahora llevan descripción (`zero-lock: bloquear`) y el diagnóstico la reconoce.
+- Bloquear tardaba ~2 s de más cuando `awww query` no respondía: el fondo actual se toma primero de `~/.config/wallpapers/.actual` (instantáneo) y solo si no existe se le pregunta a awww/swww, con 1 s de límite.
+- Si tu `hypridle.conf` es propio y lanza hyprlock directo (`pidof hyprlock || hyprlock`), el instalador ofrece cambiarlo por zero-lock, que sí sabe qué hacer con un hyprlock colgado.
+
+### Agregado
+- `zero-lock diagnostico` ahora dice qué proceso lanzó cada hyprlock abierto, a qué está atado `Super + L` (y si está atado varias veces), si zero-lock ha bloqueado alguna vez en tu compu, con qué bloquea hypridle y, si generar la config tarda, qué paso es el lento.
+
 ## [0.5.1] — 2026-10-12
 
 ### Corregido

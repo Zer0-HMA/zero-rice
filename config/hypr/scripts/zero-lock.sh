@@ -19,7 +19,7 @@
 # Colores: sigue la paleta de zero-rice (Super+Shift+P) o usa una propia.
 
 shopt -u patsub_replacement 2>/dev/null
-VERSION="1.3.0"
+VERSION="1.3.1"
 CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
 DIR="$CFG/zero-lock"
 CONF="$DIR/config"
@@ -96,6 +96,13 @@ notificar() { command -v notify-send >/dev/null 2>&1 && notify-send -a "Bloqueo"
 # Nada de lo que se consulta puede trabar el bloqueo: todo con tiempo límite.
 # (bluetoothctl, por ejemplo, se queda esperando PARA SIEMPRE si el servicio bluetooth está apagado)
 t() { local s=${T:-2}; if command -v timeout >/dev/null 2>&1; then timeout -k 1 "$s" "$@"; else "$@"; fi; }
+# crono "etiqueta" comando… → lo corre igual; con ZL_TIEMPOS=1 anota cuánto tardó (zero-lock diagnostico)
+crono() {
+  [[ -n ${ZL_TIEMPOS:-} ]] || { "${@:2}"; return; }
+  local ini rc; ini=$(date +%s%N); "${@:2}"; rc=$?
+  printf '%s %d\n' "$1" $(( ($(date +%s%N) - ini) / 1000000 )) >> "$CACHE/tiempos"
+  return $rc
+}
 log() { printf '%s  %s\n' "$(date '+%F %T')" "$*" >> "$LOG" 2>/dev/null; return 0; }
 recortar_log() { [[ -f $LOG ]] && (( $(wc -l < "$LOG") > 400 )) && { tail -n 200 "$LOG" > "$LOG.tmp" && mv -f "$LOG.tmp" "$LOG"; }; return 0; }
 HOST=${HOSTNAME:-$(cat /etc/hostname 2>/dev/null)}; HOST=${HOST:-$(uname -n)}   # Arch no trae el comando hostname
@@ -271,7 +278,7 @@ cmd_terminal() {   # [N]  bloque multilínea con colores (markup) para el estilo
 prep() {
   local s Wr=1920 Hr=1080 sw sh
   if command -v hyprctl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
-    s=$(T=2 t hyprctl monitors -j 2>/dev/null | jq -r '(map(select(.focused))[0] // .[0]) | "\((.width/.scale)|floor) \((.height/.scale)|floor)"' 2>/dev/null)
+    s=$(crono "hyprctl monitors" t hyprctl monitors -j 2>/dev/null | jq -r '(map(select(.focused))[0] // .[0]) | "\((.width/.scale)|floor) \((.height/.scale)|floor)"' 2>/dev/null)
     [[ $s =~ ^[0-9]+\ [0-9]+$ ]] && read -r Wr Hr <<<"$s"
   fi
   [[ ${ZL_TAM:-} =~ ^[0-9]+\ [0-9]+$ ]] && read -r Wr Hr <<<"$ZL_TAM"   # para probar otras pantallas: ZL_TAM="1366 768"
@@ -346,8 +353,8 @@ fondo_compatible() {   # ruta → ruta que hyprlock puede abrir, o "screenshot"
   case "${a,,}" in *.png|*.jpg|*.jpeg) echo "$a"; return ;; esac
   firma="$a|$(stat -c %Y "$a" 2>/dev/null)"
   if [[ -s $out && $(cat "$out.de" 2>/dev/null) == "$firma" ]]; then echo "$out"; return; fi
-  if   command -v magick  >/dev/null 2>&1 && T=4 t magick  "${a}[0]" "$out" 2>/dev/null; then printf '%s' "$firma" > "$out.de"; echo "$out"
-  elif command -v convert >/dev/null 2>&1 && T=4 t convert "${a}[0]" "$out" 2>/dev/null; then printf '%s' "$firma" > "$out.de"; echo "$out"
+  if   command -v magick  >/dev/null 2>&1 && T=4 crono "convertir el fondo a png" t magick  "${a}[0]" "$out" 2>/dev/null; then printf '%s' "$firma" > "$out.de"; echo "$out"
+  elif command -v convert >/dev/null 2>&1 && T=4 crono "convertir el fondo a png" t convert "${a}[0]" "$out" 2>/dev/null; then printf '%s' "$firma" > "$out.de"; echo "$out"
   elif [[ ${a,,} == *.webp ]]; then echo "$a"
   else log "fondo $a: formato que hyprlock no lee y no hay imagemagick → uso captura"; echo screenshot; fi
 }
@@ -355,12 +362,16 @@ ruta_fondo() {
   local a="" w
   case $fondo in
     auto)
-      # el que se muestra AHORA (awww/swww); si no se puede, el último que puso el rice
-      for w in awww swww; do
-        command -v "$w" >/dev/null 2>&1 || continue
-        a=$(T=2 t "$w" query 2>/dev/null | sed -n 's/.*image: //p' | head -1); [[ -f $a ]] && break; a=""
-      done
-      [[ -f $a ]] || { [[ -f $CFG/wallpapers/.actual ]] && a=$(<"$CFG/wallpapers/.actual"); }
+      # primero el que anotó el rice al ponerlo (instantáneo); solo si no hay, se le pregunta a awww/swww.
+      # (antes se preguntaba siempre, y si "awww query" se colgaba, cada bloqueo esperaba 2 s de más)
+      [[ -f $CFG/wallpapers/.actual ]] && a=$(<"$CFG/wallpapers/.actual")
+      if [[ ! -f $a ]]; then
+        a=""
+        for w in awww swww; do
+          command -v "$w" >/dev/null 2>&1 || continue
+          a=$(T=1 crono "$w query (fondo actual)" t "$w" query 2>/dev/null | sed -n 's/.*image: //p' | head -1); [[ -f $a ]] && break; a=""
+        done
+      fi
       fondo_compatible "$a" ;;
     captura) echo screenshot ;;
     solido:*) echo "color:${fondo#solido:}" ;;
@@ -499,8 +510,8 @@ estilo_panel() {
 }
 
 generar() {   # [grace]
-  cargar; prep
-  { emitir_cabecera "${1:-0}"; emitir_colores; emitir_fondo; "estilo_$estilo"; } > "$GEN.tmp" && mv "$GEN.tmp" "$GEN"
+  cargar; crono "preparar (pantalla, foto, portada)" prep
+  { emitir_cabecera "${1:-0}"; crono "colores" emitir_colores; crono "fondo" emitir_fondo; crono "estilo $estilo" "estilo_$estilo"; } > "$GEN.tmp" && mv "$GEN.tmp" "$GEN"
 }
 
 # ───────────────────────────── menú ─────────────────────────────
@@ -823,12 +834,13 @@ cmd_preview_hijo() {
 
 # ───────────────────────────── diagnóstico ─────────────────────────────
 diagnostico() {
-  local ok=$'\e[1;32m✔\e[0m' mal=$'\e[1;31m✘\e[0m' av=$'\e[1;33m!\e[0m' b ini fin p v st
+  local ok=$'\e[1;32m✔\e[0m' mal=$'\e[1;31m✘\e[0m' av=$'\e[1;33m!\e[0m' b ini fin p v st l pid padre hi tot
   echo "zero-lock $VERSION  ·  $SRC"
+
+  # ── hyprlock y el estado real de la sesión ──
   if command -v hyprlock >/dev/null 2>&1; then
     v=$(hyprlock_version); echo "$ok hyprlock ${v:-?}"
-    [[ $v == 0.9.6 ]] && echo "$av hyprlock 0.9.6 puede congelarse al desbloquear (issue #1055). zero-lock 1.3 lo detecta y lo cierra solo;
-     el arreglo de fondo llega en la próxima versión de hyprlock (o ya, con: yay -S hyprlock-git)"
+    [[ $v == 0.9.6 ]] && echo "$av hyprlock 0.9.6 puede congelarse al desbloquear (issue #1055); zero-lock 1.3 lo cierra solo al bloquear"
   else echo "$mal hyprlock NO está instalado  →  sudo pacman -S hyprlock"; fi
   st=$(sesion_bloqueada)
   case $st in
@@ -836,35 +848,81 @@ diagnostico() {
     false) echo "$ok Hyprland dice que la sesión está desbloqueada" ;;
     *)     echo "$av no pude preguntarle a Hyprland si la sesión está bloqueada (hyprctl locked)" ;;
   esac
-  if hyprlock_corriendo && [[ $st == false ]]; then
-    echo "$mal hay un hyprlock COLGADO (vivo, pero sin bloquear nada): por eso Super + L no hacía nada"
-    echo "     se cierra solo al presionar Super + L, o ya mismo con: pkill -9 hyprlock"
-  fi
+  # quién lanzó cada hyprlock: así se sabe si vino de zero-lock, de hypridle o de otro atajo
+  for pid in $(pgrep -u "$USER" -x hyprlock); do
+    padre=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
+    [[ $st == false ]] && echo "$mal hyprlock COLGADO (pid $pid, vivo pero sin bloquear nada)" || echo "$ok hyprlock corriendo (pid $pid)"
+    echo "     lo lanzó: $(ps -o args= -p "${padre:-0}" 2>/dev/null | cut -c1-110 || echo '?')"
+    echo "     con:      $(ps -o args= -p "$pid" 2>/dev/null | cut -c1-110)"
+  done
   if [[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} ]]; then
     if T=2 t hyprctl getoption misc:allow_session_lock_restore 2>/dev/null | grep -qE '(int|bool): *(1|true)'; then
       echo "$ok si hyprlock se cae estando bloqueado, se puede volver a abrir (misc:allow_session_lock_restore)"
     else
-      echo "$av misc:allow_session_lock_restore está apagado: si hyprlock se cae bloqueado, no se puede reabrir (rice.lua lo enciende; hyprctl reload)"
+      echo "$av misc:allow_session_lock_restore está apagado (rice.lua lo enciende; corre hyprctl reload)"
     fi
   fi
+
+  # ── Super + L ──
+  # En Hyprland con config en Lua, "hyprctl binds" no muestra el comando (solo una función):
+  # el atajo del rice se reconoce por su descripción "zero-lock: …".
+  if [[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} ]] && command -v jq >/dev/null 2>&1; then
+    b=$(T=2 t hyprctl binds -j 2>/dev/null)
+    l=$(jq -r '.[] | select((.key | ascii_upcase) == "L" and .modmask == 64)
+               | if (.description // "") != "" then .description else "\(.dispatcher) \(.arg)" end' <<<"$b" 2>/dev/null)
+    if [[ -z $l ]]; then
+      echo "$mal Super + L NO está registrado en Hyprland  →  revisa que hyprland.lua termine con require(\"rice\") y corre hyprctl reload"
+    elif grep -q 'zero-lock' <<<"$l"; then
+      echo "$ok Super + L → $(head -1 <<<"$l")"
+    elif grep -qE '^function' <<<"$l"; then
+      echo "$av Super + L está registrado, pero sin la descripción de zero-lock: puede ser el del rice viejo u OTRO atajo"
+      echo "     actualiza (./install.sh --actualizar) y corre hyprctl reload para que se pueda confirmar"
+    else
+      echo "$mal Super + L hace otra cosa: $(head -1 <<<"$l" | cut -c1-90)"
+    fi
+    (( $(grep -c . <<<"$l") > 1 )) && echo "$av Super + L está registrado $(grep -c . <<<"$l") veces (otro atajo puede ganarle al del rice)"
+  fi
+
+  # ── ¿zero-lock ha bloqueado alguna vez? ──
+  if [[ -s $LOG ]] && grep -q 'bloqueando con' "$LOG"; then
+    echo "$ok último bloqueo con zero-lock: $(grep 'bloqueando con' "$LOG" | tail -1 | cut -c1-19)"
+  else
+    echo "$mal zero-lock NUNCA ha bloqueado en esta compu: Super + L no lo está llamando"
+    echo "     prueba directo en la terminal:  $SRC lock"
+  fi
+
+  # ── hypridle ──
   if command -v hypridle >/dev/null 2>&1; then
     if pgrep -x hypridle >/dev/null; then echo "$ok hypridle corriendo (bloqueo automático)"
     else echo "$av hypridle instalado pero NO corre  →  hypridle & disown   (el rice lo arranca al iniciar sesión)"; fi
   else echo "$av hypridle no está instalado (sin bloqueo automático)  →  sudo pacman -S hypridle"; fi
-  if [[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} ]] && command -v jq >/dev/null 2>&1; then
-    b=$(T=2 t hyprctl binds -j 2>/dev/null | jq -r '.[] | select((.arg // "") | test("zero-lock|hyprlock|lock-session")) | "\(.modmask) \(.key) → \(.arg)"' 2>/dev/null)
-    if [[ -n $b ]]; then echo "$ok atajos registrados en Hyprland:"; sed 's/^/     /' <<<"$b"
-    else echo "$mal Hyprland NO tiene ningún atajo de bloqueo  →  corre ./install.sh --actualizar y luego hyprctl reload"; fi
+  if [[ -f $CFG/hypr/hypridle.conf ]]; then
+    hi=$(grep -E '^[[:space:]]*lock_cmd' "$CFG/hypr/hypridle.conf" 2>/dev/null | head -1 | sed 's/^[[:space:]]*//; s/[[:space:]]*#.*//')
+    if [[ -z $hi ]]; then echo "$av hypridle.conf no tiene lock_cmd: el bloqueo automático no usa zero-lock"
+    elif [[ $hi == *"zero-lock"*"--auto"* ]]; then echo "$ok hypridle bloquea con zero-lock ($hi)"
+    elif [[ $hi == *zero-lock* ]]; then echo "$av hypridle usa la línea vieja: $hi  →  ./install.sh --actualizar la cambia"
+    else echo "$mal hypridle bloquea SIN zero-lock: $hi  →  cámbialo por:  lock_cmd = $SRC lock --auto"; fi
   fi
+
   if compgen -G '/sys/class/bluetooth/hci*' >/dev/null && ! systemctl is-active --quiet bluetooth 2>/dev/null; then
-    echo "$ok bluetooth apagado: se detecta sin colgarse (antes de la 1.2.0 esto trababa el bloqueo)"
+    echo "$ok bluetooth apagado: se detecta sin colgarse"
   fi
   p=$(pgrep -fa 'zero-lock(\.sh)? lock' | grep -v "^$$ " || true)
-  [[ -n $p ]] && { echo "$av procesos de bloqueo atorados de antes (se pueden matar con: pkill -f 'zero-lock.sh lock'):"; sed 's/^/     /' <<<"$p"; }
+  [[ -n $p ]] && { echo "$av procesos de bloqueo esperando (normal si hay un hyprlock abierto):"; sed 's/^/     /' <<<"$p"; }
+
+  # ── generar la config, midiendo cada paso ──
+  rm -f "$CACHE/tiempos"
   ini=$(date +%s%N)
-  if T=5 t bash "$SRC" _generar 0 2>/dev/null && [[ -s $GEN ]]; then fin=$(date +%s%N); echo "$ok la config se genera en $(( (fin - ini) / 1000000 )) ms → $GEN"
+  if ZL_TIEMPOS=1 T=8 t bash "$SRC" _generar 0 2>/dev/null && [[ -s $GEN ]]; then
+    fin=$(date +%s%N); tot=$(( (fin - ini) / 1000000 ))
+    if (( tot < 800 )); then echo "$ok la config se genera en $tot ms → $GEN"
+    else
+      echo "$av la config tarda $tot ms en generarse (Super + L tarda eso en mostrar el bloqueo). Lo más lento:"
+      awk '{ ms=$NF; $NF=""; printf "%d\t%s\n", ms, $0 }' "$CACHE/tiempos" 2>/dev/null | sort -nr | head -4 \
+        | awk -F'\t' '{ printf "       %6d ms  %s\n", $1, $2 }'
+    fi
   else echo "$mal la config NO se genera (se usaría la de emergencia). Revisa: bash -x $SRC gen"; fi
-  [[ -f $LOG ]] && { echo "── últimas líneas de $LOG"; tail -n 8 "$LOG"; }
+  [[ -s $LOG ]] && { echo "── últimas líneas de $LOG"; tail -n 8 "$LOG"; }
   return 0
 }
 
