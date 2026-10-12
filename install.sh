@@ -236,7 +236,7 @@ ok "Hyprland → rice.lua  (tus ajustes personales van en ~/.config/hypr/mio.lua
 for s in wall paleta red barra captura lanzador panel clima elegir-fondo zero-lock; do
   instalar "hypr/scripts/$s.sh" "$S/$s.sh" x
 done
-for l in color plantillas fondos dinamica; do
+for l in color plantillas fondos dinamica fondoactual; do
   instalar "hypr/scripts/lib/$l.sh" "$S/lib/$l.sh" x
 done
 ok "Scripts → ~/.config/hypr/scripts"

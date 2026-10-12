@@ -320,14 +320,20 @@ ruta_fondo() {
   local a="" w
   case $fondo in
     auto)
-      [[ -f $CFG/wallpapers/.actual ]] && a=$(<"$CFG/wallpapers/.actual")
-      if [[ ! -f $a ]]; then
-        for w in awww swww; do
-          command -v "$w" >/dev/null 2>&1 || continue
-          a=$("$w" query 2>/dev/null | head -1 | sed -n 's/.*image: //p'); [[ -f $a ]] && break
-        done
-      fi
-      [[ -f $a ]] && echo "$a" || echo screenshot ;;
+      for w in awww swww; do
+        command -v "$w" >/dev/null 2>&1 || continue
+        a=$("$w" query 2>/dev/null | sed -n 's/.*image: //p' | head -1); [[ -f $a ]] && break; a=""
+      done
+      [[ -f $a ]] || { [[ -f $CFG/wallpapers/.actual ]] && a=$(<"$CFG/wallpapers/.actual"); }
+      if [[ -f $a ]]; then
+        case "${a,,}" in
+          *.png|*.jpg|*.jpeg) echo "$a" ;;
+          *) if   command -v magick  >/dev/null 2>&1 && magick  "${a}[0]" "$CACHE/fondo.png" 2>/dev/null; then echo "$CACHE/fondo.png"
+             elif command -v convert >/dev/null 2>&1 && convert "${a}[0]" "$CACHE/fondo.png" 2>/dev/null; then echo "$CACHE/fondo.png"
+             elif [[ ${a,,} == *.webp ]]; then echo "$a"
+             else echo screenshot; fi ;;
+        esac
+      else echo screenshot; fi ;;
     captura) echo screenshot ;;
     solido:*) echo "color:${fondo#solido:}" ;;
     *) [[ -f $fondo ]] && echo "$fondo" || echo screenshot ;;

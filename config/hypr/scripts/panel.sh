@@ -93,33 +93,42 @@ fi
 
 # ─────────── fondo (recortado al tamaño del panel; solo se rehace cuando cambias de fondo) ───────────
 escala=${PANEL_ESCALA:-1}
-fondo=$(cat "$CFG/wallpapers/.actual" 2>/dev/null)
+# shellcheck source=lib/fondoactual.sh
+source "$SCRIPTS/lib/fondoactual.sh" 2>/dev/null || fondo_actual() { cat "$CFG/wallpapers/.actual" 2>/dev/null; }
+fondo=$(fondo_actual)      # el fondo que se muestra AHORA (awww/swww), no solo el último que puso el rice
 recorte="$DIR/fondo-panel.png"
 
 hacer_recorte() {
-  [[ -f "$fondo" ]] || return 1
-  case "${fondo,,}" in *.png|*.jpg|*.jpeg) ;; *) return 1 ;; esac
-  local ext=${fondo##*.}; local copia="$DIR/original.${ext,,}"
-  rm -f "$DIR"/original.*; cp -f "$fondo" "$copia"     # librsvg solo lee imágenes de la misma carpeta
+  local origen=$fondo ext copia rc=0 conv="$DIR/convertido.png"
+  if [[ ! -f "$origen" ]]; then rm -f "$recorte" "$DIR/.recorte"; return 1; fi
+  ext=${origen##*.}; ext=${ext,,}
+  case "$ext" in
+    png|jpg|jpeg) ;;
+    *)   # webp, gif, avif, bmp…: se usa el primer cuadro convertido a PNG
+      rm -f "$conv"
+      if   command -v magick  >/dev/null 2>&1 && magick  "${origen}[0]" "$conv" 2>/dev/null; then :
+      elif command -v convert >/dev/null 2>&1 && convert "${origen}[0]" "$conv" 2>/dev/null; then :
+      else rm -f "$recorte" "$DIR/.recorte"; return 1; fi
+      origen=$conv; ext=png ;;
+  esac
+  copia="$DIR/original.$ext"
+  rm -f "$DIR"/original.*; cp -f "$origen" "$copia"     # librsvg solo lee imágenes de la misma carpeta
   cat > "$DIR/recorte.svg" <<EOR
 <svg xmlns="http://www.w3.org/2000/svg" width="$W" height="$H" viewBox="0 0 $W $H">
   <image href="$(basename "$copia")" x="0" y="0" width="$W" height="$H" preserveAspectRatio="xMinYMid slice"/>
 </svg>
 EOR
   rsvg-convert -z "$escala" -o "$recorte.tmp" "$DIR/recorte.svg" && mv "$recorte.tmp" "$recorte" \
-    && printf '%s|%s|%s' "$fondo" "$(stat -c %Y "$fondo")" "$escala" > "$DIR/.recorte"
+    && printf '%s|%s|%s' "$fondo" "$(stat -c %Y "$fondo")" "$escala" > "$DIR/.recorte" || rc=1
   rm -f "$copia"
+  return $rc
 }
 
 if [[ "${1:-}" == "fondo" ]]; then hacer_recorte; exit $?; fi
 
 clave="$fondo|$(stat -c %Y "$fondo" 2>/dev/null)|$escala"
 if [[ "$(cat "$DIR/.recorte" 2>/dev/null)" != "$clave" ]]; then
-  if [[ -f "$recorte" ]]; then
-    setsid -f "$0" fondo >/dev/null 2>&1      # se rehace en segundo plano; mientras, usa el anterior
-  else
-    hacer_recorte                              # primera vez: hay que esperarlo
-  fi
+  hacer_recorte || rm -f "$recorte"      # si cambió el fondo se rehace AHORA: nunca se muestra el anterior
 fi
 img_fondo=""
 [[ -f "$recorte" ]] && img_fondo="<image href=\"fondo-panel.png\" x=\"0\" y=\"0\" width=\"$W\" height=\"$H\"/>"
