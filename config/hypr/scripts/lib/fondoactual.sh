@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # lib/fondoactual.sh — ruta del fondo de pantalla que se está mostrando AHORA
 # (pregunta a awww/swww; si no puede, usa el último que puso el rice)
 fondo_actual() {

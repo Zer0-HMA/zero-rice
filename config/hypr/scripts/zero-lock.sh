@@ -19,7 +19,7 @@
 # Colores: sigue la paleta de zero-rice (Super+Shift+P) o usa una propia.
 
 shopt -u patsub_replacement 2>/dev/null
-VERSION="1.2.0"
+VERSION="1.2.1"
 CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
 DIR="$CFG/zero-lock"
 CONF="$DIR/config"
@@ -338,21 +338,33 @@ animations {
 
 EOF
 }
+# hyprlock solo lee png/jpg (y webp en versiones nuevas): gif, webp animado, avif, etc. se convierten a png
+# (solo la primera vez: se reusa mientras la imagen no cambie)
+fondo_compatible() {   # ruta → ruta que hyprlock puede abrir, o "screenshot"
+  local a=$1 out="$CACHE/fondo.png" firma
+  [[ -f $a ]] || { echo screenshot; return; }
+  case "${a,,}" in *.png|*.jpg|*.jpeg) echo "$a"; return ;; esac
+  firma="$a|$(stat -c %Y "$a" 2>/dev/null)"
+  if [[ -s $out && $(cat "$out.de" 2>/dev/null) == "$firma" ]]; then echo "$out"; return; fi
+  if   command -v magick  >/dev/null 2>&1 && T=4 t magick  "${a}[0]" "$out" 2>/dev/null; then printf '%s' "$firma" > "$out.de"; echo "$out"
+  elif command -v convert >/dev/null 2>&1 && T=4 t convert "${a}[0]" "$out" 2>/dev/null; then printf '%s' "$firma" > "$out.de"; echo "$out"
+  elif [[ ${a,,} == *.webp ]]; then echo "$a"
+  else log "fondo $a: formato que hyprlock no lee y no hay imagemagick → uso captura"; echo screenshot; fi
+}
 ruta_fondo() {
   local a="" w
   case $fondo in
     auto)
-      [[ -f $CFG/wallpapers/.actual ]] && a=$(<"$CFG/wallpapers/.actual")
-      if [[ ! -f $a ]]; then
-        for w in awww swww; do
-          command -v "$w" >/dev/null 2>&1 || continue
-          a=$("$w" query 2>/dev/null | head -1 | sed -n 's/.*image: //p'); [[ -f $a ]] && break
-        done
-      fi
-      [[ -f $a ]] && echo "$a" || echo screenshot ;;
+      # el que se muestra AHORA (awww/swww); si no se puede, el último que puso el rice
+      for w in awww swww; do
+        command -v "$w" >/dev/null 2>&1 || continue
+        a=$(T=2 t "$w" query 2>/dev/null | sed -n 's/.*image: //p' | head -1); [[ -f $a ]] && break; a=""
+      done
+      [[ -f $a ]] || { [[ -f $CFG/wallpapers/.actual ]] && a=$(<"$CFG/wallpapers/.actual"); }
+      fondo_compatible "$a" ;;
     captura) echo screenshot ;;
     solido:*) echo "color:${fondo#solido:}" ;;
-    *) [[ -f $fondo ]] && echo "$fondo" || echo screenshot ;;
+    *) fondo_compatible "$fondo" ;;
   esac
 }
 emitir_fondo() {

@@ -28,7 +28,7 @@ VERSION=$(cat "$REPO/VERSION" 2>/dev/null || echo "?")
 
 # scripts y archivos de la barra que instala el rice (una sola lista para instalar y desinstalar)
 SCRIPTS=(wall paleta red barra captura lanzador panel clima elegir-fondo temp portapapeles ws3d perfil animaciones zero-lock)
-LIBS=(color plantillas fondos dinamica)
+LIBS=(color plantillas fondos dinamica fondoactual)
 AGS=(app.tsx style.css ws3d.tsx efectos3d.ts)
 
 SI=0; SOLO_CONFIGS=0; PALETA=""; MODO="instalar"
