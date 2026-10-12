@@ -2,6 +2,16 @@
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [SemVer](https://semver.org/lang/es/).
 
+## [0.5.0] — 2026-10-12
+
+### Agregado
+- **Panel de control** (`Super + A`, botón de ajustes de la barra o `ags request panel`): botones rápidos de Wi-Fi, bluetooth, No molestar, micrófono, luz nocturna y Tailscale; volumen y brillo; música con portada y barra de avance; calendario plegable; accesos a paleta, estilo de barra, fondo, animaciones, captura y portapapeles. Se cierra con `Esc` o con un clic fuera, aparece en el monitor enfocado y se desplaza si no cabe.
+- `red.sh tailscale`: conecta o desconecta Tailscale según su estado.
+- `hyprsunset` en los paquetes, para la luz nocturna.
+
+### Cambiado
+- El título de la ventana en la barra lleva una sombra suave para leerse sobre cualquier fondo.
+
 ## [0.4.0] — 2026-10-12
 
 ### Agregado

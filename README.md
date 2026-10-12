@@ -1,7 +1,7 @@
 # ZERO — rice para Hyprland
 
 [![Revisar](https://github.com/Zer0-HMA/zero-rice/actions/workflows/revisar.yml/badge.svg)](https://github.com/Zer0-HMA/zero-rice/actions/workflows/revisar.yml)
-![Versión](https://img.shields.io/badge/versión-0.4.0-blue)
+![Versión](https://img.shields.io/badge/versión-0.5.0-blue)
 ![Arch Linux](https://img.shields.io/badge/Arch_Linux-1793D1?logo=archlinux&logoColor=white)
 ![Hyprland](https://img.shields.io/badge/Hyprland-Lua-58E1FF)
 [![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-green)](LICENSE)
@@ -19,6 +19,7 @@ Configuración completa para **Arch Linux + Hyprland** (config en Lua): barra co
 - **Look de Hyprland:** bordes con degradado animado, esquinas redondeadas, blur, sombras y animaciones suaves.
 - **Barra (AGS v3):** tu **foto de perfil** y nombre (se pone **blanca cuando eres root**), workspaces 1–5, reloj con calendario, música, red, CPU/RAM/temperatura, volumen, batería, bandeja, paletas, **contador de notificaciones** con No molestar y menú de energía. Tiene un guardián que la levanta sola si se cae.
 - **6 estilos de barra** (`Super + Shift + B` o clic derecho en el botón de paletas): islas, flotante, bloque, neón, vidrio y minimal. Son independientes de la paleta, así que se combinan con las 48, y se cambian en vivo. Reloj, red y sistema se **expanden al pasar el mouse**, y la música trae un **espectro de audio** en tus colores.
+- **Panel de control** (`Super + A` o el botón de ajustes de la barra): Wi-Fi, bluetooth, No molestar, micrófono, luz nocturna y Tailscale con un clic; volumen y brillo; música con portada; calendario y accesos a todos los menús del rice.
 - **Neovim con LazyVim** que **sigue tu paleta**: al cambiar de paleta, todos los Neovim abiertos se repintan solos. Trae el logo de ZERO al iniciar, herramientas para editar el propio rice (bash, CSS, TS, Lua) y atajos `Espacio + z` para cambiar paleta y estilo de barra sin salir del editor.
 - **OSD de volumen y brillo:** aparece en el monitor donde estás, con cualquier forma de cambiarlos (teclas, rueda, pavucontrol).
 - **Workspaces en 3D:** 12 efectos (cubo, carrusel, puerta, túnel, persianas, mosaico…) al cambiar de workspace con `Super + número` o la rueda.
@@ -93,6 +94,7 @@ El script pregunta antes de cada paso, respalda todo lo que reemplaza en `~/.con
 | `Super + Shift + I` | Usar una imagen de cualquier carpeta como fondo |
 | `Super + N` | Centro de notificaciones |
 | `Super + Shift + N` | Menú de red |
+| `Super + A` | Panel de control |
 | `Super + B` | Reiniciar la barra |
 | `Super + Shift + B` | Estilo de la barra |
 | `Impr Pant` / `Super + Shift + S` | Captura de un área |
@@ -236,6 +238,16 @@ barra-estilo.sh lista         # ver todos
 
 Cada estilo es un archivo en `~/.config/ags/estilos/`. Para crear el tuyo, copia uno con otro nombre, agrégalo a la lista `ESTILOS` de `barra-estilo.sh` y usa los colores de la paleta (`@fondo`, `@acento`, `@acento2`, `@sombra`…).
 
+## Panel de control
+
+`Super + A` (o el botón de ajustes de la barra) despliega el panel en el monitor donde estás. Se cierra con `Esc` o con un clic fuera.
+
+- **Botones rápidos:** Wi-Fi, bluetooth, No molestar, micrófono, luz nocturna (hyprsunset, 4500 K) y Tailscale. Los que no aplican a tu equipo no aparecen (por ejemplo, bluetooth sin adaptador).
+- **Volumen y brillo** (el brillo solo en laptops), **música** con portada, controles y barra de avance, y la **fecha**, que despliega el calendario.
+- **Accesos** a los menús de paleta, estilo de barra, fondo, animaciones, captura y portapapeles.
+
+Desde la terminal o tus propios atajos: `ags request panel` (alterna), `ags request panel abrir` o `ags request panel cerrar`.
+
 ## Neovim
 
 El instalador pone **LazyVim** en `~/.config/nvim` (si ya tenías una config, la respalda antes de preguntar). Los colores salen de tu paleta: `paleta.sh` escribe `~/.config/rice-nvim/paleta.lua` y Neovim la convierte en un tema base16 y se repinta solo cuando cambia.
@@ -331,6 +343,7 @@ zero-rice/
 │   │                               temp, portapapeles, perfil, animaciones, ws3d, zero-lock, barra-estilo
 │   ├── hypr/scripts/lib/           motor de paletas: color, plantillas, fondos, desde imagen
 │   ├── ags/                        barra (app.tsx + style.css), workspaces 3D (ws3d.tsx + efectos3d.ts)
+│   ├── ags/panel.tsx               panel de control (Super + A)
 │   ├── ags/estilos/                los 6 estilos de la barra
 │   ├── nvim/                       Neovim con LazyVim (lua/zero = puente con la paleta)
 │   ├── rofi/                       lanzador
