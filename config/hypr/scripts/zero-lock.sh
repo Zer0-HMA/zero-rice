@@ -6,7 +6,7 @@
 #
 #   zero-lock instalar [--si]   instala dependencias, el comando y los atajos
 #   zero-lock                   abre el MENÚ de personalización
-#   zero-lock lock              bloquea la pantalla (Super + L)
+#   zero-lock lock              bloquea la pantalla (Super + L)  ·  lock --auto lo usa hypridle
 #   zero-lock preview           vista previa de 6 s (mueve el mouse y sales)
 #   zero-lock estilo <nombre>   tarjetas | minimal | centrado | terminal | panel
 #   zero-lock siguiente         cambia al siguiente estilo
@@ -19,7 +19,7 @@
 # Colores: sigue la paleta de zero-rice (Super+Shift+P) o usa una propia.
 
 shopt -u patsub_replacement 2>/dev/null
-VERSION="1.2.1"
+VERSION="1.3.0"
 CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
 DIR="$CFG/zero-lock"
 CONF="$DIR/config"
@@ -681,7 +681,32 @@ menu() {
 
 # ───────────────────────────── bloquear / vista previa ─────────────────────────────
 tiene_hyprlock() { command -v hyprlock >/dev/null 2>&1 || { notificar -u critical "zero-lock" "Falta hyprlock: sudo pacman -S hyprlock"; echo "Falta hyprlock (sudo pacman -S hyprlock)" >&2; log "ERROR: hyprlock no está instalado"; return 1; }; }
-hyprlock_corriendo() { pgrep -x hyprlock >/dev/null 2>&1; }
+hyprlock_corriendo() { pgrep -u "$USER" -x hyprlock >/dev/null 2>&1; }
+hyprlock_version() { T=1 t hyprlock --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1; }
+
+# ¿La sesión está bloqueada DE VERDAD? Hyprland lo sabe: "hyprctl locked" → true / false.
+# Imprime true, false o ? (si no se puede preguntar: fuera de Hyprland o un Hyprland viejo).
+sesion_bloqueada() {
+  local r=""
+  if [[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} ]] && command -v hyprctl >/dev/null 2>&1; then
+    r=$(T=2 t hyprctl locked 2>/dev/null | tr -d '[:space:]')
+  fi
+  case $r in true|false) printf '%s' "$r" ;; *) printf '?' ;; esac
+}
+
+# hyprlock 0.9.6 a veces se queda congelado al desbloquear (bug de hyprlock, issue #1055):
+# el proceso sigue vivo sin bloquear nada, y antes zero-lock creía que "ya estabas bloqueado"
+# y no volvía a bloquear nunca. Aquí se cierra ese hyprlock colgado para poder bloquear de nuevo.
+cerrar_hyprlock_colgado() {
+  local p i
+  p=$(pgrep -u "$USER" -x hyprlock | tr '\n' ' ')
+  log "AVISO: hyprlock seguía vivo (pid ${p% }) con la sesión desbloqueada: se quedó colgado; lo cierro"
+  : > "$CACHE/.reemplazando"   # avisa al zero-lock que lo lanzó: que no lo tome como caída ni reintente
+  pkill -TERM -u "$USER" -x hyprlock 2>/dev/null
+  for i in 1 2 3 4 5 6 7 8 9 10; do hyprlock_corriendo || break; sleep 0.2; done
+  if hyprlock_corriendo; then pkill -KILL -u "$USER" -x hyprlock 2>/dev/null; sleep 0.3; fi
+  ! hyprlock_corriendo
+}
 
 # Config mínima que no depende de nada (ni fuentes, ni scripts, ni paleta): si la bonita falla, se usa esta.
 emitir_seguro() {
@@ -733,21 +758,56 @@ preparar_config() {   # grace → imprime la ruta de la config a usar
   fi
 }
 
-cmd_lock() {
-  hyprlock_corriendo && return 0
+cmd_lock() {   # [--auto]   --auto = lo pide hypridle; sin él, un atajo, la barra o el panel
+  local origen=atajo cfg rc st
+  [[ ${1:-} == --auto ]] && origen=auto
   tiene_hyprlock || return 1
   recortar_log
+
+  if hyprlock_corriendo; then
+    st=$(sesion_bloqueada)
+    case "$st:$origen" in
+      true:*)
+        log "la sesión ya está bloqueada ($origen)"; return 0 ;;
+      false:*|'?:atajo')
+        # false: Hyprland dice que NO está bloqueada, así que ese hyprlock está colgado.
+        # ?:atajo: sin poder preguntarle a Hyprland, pero Hyprland no ejecuta atajos con la pantalla
+        # bloqueada: si esto vino de Super + L, de la barra o del panel, ese hyprlock está colgado.
+        if ! cerrar_hyprlock_colgado; then
+          log "ERROR: no pude cerrar el hyprlock colgado"
+          notificar -u critical "zero-lock" "hyprlock se quedó colgado y no pude cerrarlo. Prueba: pkill -9 hyprlock"
+          return 1
+        fi ;;
+      *)
+        log "hyprlock ya corre y no puedo saber si la sesión está bloqueada; no hago nada ($origen)"; return 0 ;;
+    esac
+  fi
+
   # un solo bloqueo a la vez (Super + L varias veces, hypridle y el botón de la barra al mismo tiempo…)
   exec 8>"$CACHE/.bloqueando"
-  if command -v flock >/dev/null 2>&1 && ! flock -n 8; then log "ya se estaba bloqueando; ignoro este intento"; return 0; fi
-  local cfg rc
-  cfg=$(preparar_config 0)
-  log "bloqueando con $cfg"
+  if command -v flock >/dev/null 2>&1 && ! flock -w 4 8; then log "ya se estaba bloqueando; ignoro este intento"; return 0; fi
+  rm -f "$CACHE/.reemplazando"
+  hyprlock_corriendo && { log "otro bloqueo se adelantó; listo"; return 0; }
+
+  # 8>&-: nada de lo que se lanza al generar la config (la descarga de la portada, el clima…) se queda
+  # con el candado. Antes la portada lo heredaba y, mientras se descargaba, Super + L no hacía nada.
+  cfg=$(preparar_config 0 8>&-)
+  log "bloqueando con $cfg ($origen · hyprlock $(hyprlock_version))"
   hyprlock -c "$cfg" 8>&- 2>>"$LOG"; rc=$?
-  if (( rc != 0 )) && [[ $cfg != "$SEGURO" ]] && ! hyprlock_corriendo; then
-    # hyprlock no arrancó o se cayó con la config bonita: nunca te quedas sin bloqueo
-    log "hyprlock salió con código $rc → reintento con la config de emergencia"
-    emitir_seguro; hyprlock -c "$SEGURO" 8>&- 2>>"$LOG"; rc=$?
+
+  if [[ -e $CACHE/.reemplazando ]]; then
+    log "este hyprlock se cerró a propósito porque estaba colgado (código $rc)"; return 0
+  fi
+  if (( rc != 0 )) && ! hyprlock_corriendo; then
+    st=$(sesion_bloqueada)
+    if [[ $st == true || ( $st == '?' && $cfg != "$SEGURO" ) ]]; then
+      # hyprlock se cayó y la sesión sigue bloqueada: nunca te quedas sin pantalla para escribir tu contraseña
+      log "hyprlock salió con código $rc y la sesión sigue bloqueada → reintento con la config de emergencia"
+      emitir_seguro; hyprlock -c "$SEGURO" 8>&- 2>>"$LOG"; rc=$?
+    else
+      # se cayó al desbloquear (bug de hyprlock 0.9.6): la sesión ya está libre, no se vuelve a bloquear
+      log "hyprlock salió con código $rc, pero la sesión ya quedó desbloqueada: no reintento"
+    fi
   fi
   log "desbloqueado (código $rc)"
   return 0
@@ -763,10 +823,30 @@ cmd_preview_hijo() {
 
 # ───────────────────────────── diagnóstico ─────────────────────────────
 diagnostico() {
-  local ok=$'\e[1;32m✔\e[0m' mal=$'\e[1;31m✘\e[0m' av=$'\e[1;33m!\e[0m' b ini fin p
+  local ok=$'\e[1;32m✔\e[0m' mal=$'\e[1;31m✘\e[0m' av=$'\e[1;33m!\e[0m' b ini fin p v st
   echo "zero-lock $VERSION  ·  $SRC"
-  if command -v hyprlock >/dev/null 2>&1; then echo "$ok hyprlock: $(hyprlock --version 2>/dev/null | head -1)"
+  if command -v hyprlock >/dev/null 2>&1; then
+    v=$(hyprlock_version); echo "$ok hyprlock ${v:-?}"
+    [[ $v == 0.9.6 ]] && echo "$av hyprlock 0.9.6 puede congelarse al desbloquear (issue #1055). zero-lock 1.3 lo detecta y lo cierra solo;
+     el arreglo de fondo llega en la próxima versión de hyprlock (o ya, con: yay -S hyprlock-git)"
   else echo "$mal hyprlock NO está instalado  →  sudo pacman -S hyprlock"; fi
+  st=$(sesion_bloqueada)
+  case $st in
+    true)  echo "$ok Hyprland dice que la sesión está bloqueada" ;;
+    false) echo "$ok Hyprland dice que la sesión está desbloqueada" ;;
+    *)     echo "$av no pude preguntarle a Hyprland si la sesión está bloqueada (hyprctl locked)" ;;
+  esac
+  if hyprlock_corriendo && [[ $st == false ]]; then
+    echo "$mal hay un hyprlock COLGADO (vivo, pero sin bloquear nada): por eso Super + L no hacía nada"
+    echo "     se cierra solo al presionar Super + L, o ya mismo con: pkill -9 hyprlock"
+  fi
+  if [[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} ]]; then
+    if T=2 t hyprctl getoption misc:allow_session_lock_restore 2>/dev/null | grep -qE '(int|bool): *(1|true)'; then
+      echo "$ok si hyprlock se cae estando bloqueado, se puede volver a abrir (misc:allow_session_lock_restore)"
+    else
+      echo "$av misc:allow_session_lock_restore está apagado: si hyprlock se cae bloqueado, no se puede reabrir (rice.lua lo enciende; hyprctl reload)"
+    fi
+  fi
   if command -v hypridle >/dev/null 2>&1; then
     if pgrep -x hypridle >/dev/null; then echo "$ok hypridle corriendo (bloqueo automático)"
     else echo "$av hypridle instalado pero NO corre  →  hypridle & disown   (el rice lo arranca al iniciar sesión)"; fi
@@ -834,7 +914,7 @@ instalar() {
 
   if [[ -f $HI ]] && grep -q '^[[:space:]]*lock_cmd' "$HI" && ! grep -q zero-lock "$HI"; then
     if confirmar "¿Que el bloqueo automático (hypridle) use zero-lock?"; then
-      cp "$HI" "$HI.bak.$(date +%s)"; sed -i "s|^\([[:space:]]*\)lock_cmd.*|\1lock_cmd = pidof hyprlock \|\| $SRC lock|" "$HI"
+      cp "$HI" "$HI.bak.$(date +%s)"; sed -i "s|^\([[:space:]]*\)lock_cmd.*|\1lock_cmd = $SRC lock --auto|" "$HI"
       say "hypridle actualizado (respaldo guardado)"
     fi
   fi
@@ -882,7 +962,7 @@ main() {
   local c=${1:-menu} i p
   case "$c" in
     menu|"")        menu ;;
-    lock|bloquear)  cmd_lock ;;
+    lock|bloquear)  cmd_lock "${2:-}" ;;
     preview|vista)  cmd_preview_hijo ;;
     estilo)         [[ " ${ESTILOS[*]} " == *" ${2:-} "* ]] || { echo "Estilos: ${ESTILOS[*]}" >&2; exit 1; }; guardar estilo "$2"; echo "Estilo: $2" ;;
     siguiente)      cargar; for i in "${!ESTILOS[@]}"; do [[ ${ESTILOS[$i]} == "$estilo" ]] && break; done

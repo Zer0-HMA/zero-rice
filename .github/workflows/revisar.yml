@@ -14,7 +14,7 @@ jobs:
         run: for f in install.sh config/hypr/scripts/*.sh config/hypr/scripts/lib/*.sh; do bash -n "$f"; done
 
       - name: ShellCheck
-        run: shellcheck -S warning install.sh config/hypr/scripts/*.sh config/hypr/scripts/lib/*.sh
+        run: shellcheck -S warning install.sh config/hypr/scripts/*.sh config/hypr/scripts/lib/*.sh .github/pruebas/*.sh
 
       - name: Scripts ejecutables
         run: |
@@ -30,6 +30,9 @@ jobs:
             timeout 15 bash config/hypr/scripts/zero-lock.sh gen > "/tmp/zl-$e.conf" || { echo "zero-lock se colgó o falló con el estilo $e"; exit 1; }
             grep -q '^input-field {' "/tmp/zl-$e.conf" || { echo "Estilo $e sin campo de contraseña"; exit 1; }
           done
+
+      - name: zero-lock bloquea aunque hyprlock se cuelgue o se caiga (bug de hyprlock 0.9.6)
+        run: bash .github/pruebas/zero-lock-bloqueo.sh
 
       - name: Sintaxis de Lua
         run: |

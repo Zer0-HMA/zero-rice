@@ -66,6 +66,8 @@ hl.config({
     misc = {
         force_default_wallpaper = 0,
         disable_hyprland_logo   = true,
+        -- si hyprlock se cae con la pantalla bloqueada, zero-lock puede volver a abrirlo
+        allow_session_lock_restore = true,
     },
 })
 
