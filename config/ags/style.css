@@ -186,3 +186,30 @@ window.osd {
 
 /* ══════ Workspaces 3D (la capa la pinta ws3d.tsx) ══════ */
 window.ws3d { background: transparent; }
+
+/* ══════ Interacción (v0.4.0): vale para todos los estilos de la barra ══════ */
+/* El borde se enciende al pasar el mouse: responde a ti, no se mueve solo */
+.barra .modulo:hover { border-color: alpha(@acento, 0.65); }
+
+/* La pastilla del workspace activo se estira con un pequeño rebote */
+.barra .workspaces button { transition: min-width 320ms cubic-bezier(0.2, 0.9, 0.3, 1.25), background-color 200ms ease, color 200ms ease; }
+
+/* Módulos que se expanden (reloj, red, sistema) */
+.barra .expandible .detalle { margin-left: 10px; color: @texto; }
+.barra .reloj .hora { font-size: 14px; }
+.barra .reloj .fecha { margin-left: 10px; color: @tenue; }
+.barra .sistema .detalle { color: @acento; }
+.barra .red .detalle { color: @texto; }
+
+/* Espectro de la música: toma este color y sigue a la paleta */
+.barra .musica .cava { color: @acento; margin: 0 2px; }
+
+/* Alertas: lo único que se mueve sin que lo toques, y solo cuando importa */
+@keyframes latido {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.45; }
+  100% { opacity: 1; }
+}
+.barra .notis.hay .contador     { animation: latido 1.8s ease-in-out infinite; }
+.barra .bateria.baja            { animation: latido 1.2s ease-in-out infinite; }
+.barra .sistema .caliente       { animation: latido 1.2s ease-in-out infinite; }

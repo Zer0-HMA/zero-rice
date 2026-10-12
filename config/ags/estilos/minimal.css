@@ -1,0 +1,16 @@
+/* Estilo «minimal» — sin fondos ni bordes: solo texto e iconos sobre tu fondo de pantalla.
+   Una sombra suave detrás del texto lo mantiene legible sobre cualquier imagen. */
+.barra .modulo {
+  background-color: transparent;
+  border-color: transparent;
+  padding: 2px 8px;
+}
+.barra .modulo:hover { background-color: alpha(@fondo, 0.45); }
+.barra label, .barra .icono { text-shadow: 0 1px 3px alpha(@sombra, 0.9); }
+.barra .workspaces button.activo {
+  background-image: none;
+  background-color: transparent;
+  color: @acento;
+  box-shadow: inset 0 -2px @acento;
+  border-radius: 0;
+}

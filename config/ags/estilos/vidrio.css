@@ -1,0 +1,9 @@
+/* Estilo «vidrio» — islas casi transparentes; Hyprland desenfoca lo que hay detrás.
+   (La opacidad no baja de 0.3 porque rice.lua solo desenfoca desde ahí: ignore_alpha = 0.3) */
+.barra .modulo {
+  background-color: alpha(@fondo, 0.42);
+  border: 1px solid alpha(@texto, 0.14);
+  box-shadow: inset 0 1px alpha(@texto, 0.10);
+}
+.barra .modulo:hover { background-color: alpha(@fondo, 0.60); border-color: alpha(@texto, 0.28); }
+.barra .workspaces button.activo { background-image: none; background-color: alpha(@texto, 0.85); color: @fondo; }

@@ -115,13 +115,14 @@ hl.window_rule({
 ----------------
 for _, k in ipairs({ "SUPER + R", "SUPER + L", "SUPER + SHIFT + L", "SUPER + SHIFT + V", "SUPER + SHIFT + F",
                      "SUPER + SHIFT + A", "Print", "SHIFT + Print", "SUPER + Print", "SUPER + SHIFT + Print",
-                     "SUPER + SHIFT + S" }) do
+                     "SUPER + SHIFT + S", "SUPER + SHIFT + B" }) do
     hl.unbind(k)
 end
 
 -- Lanzador, barra y menús
 hl.bind("SUPER + R",         hl.dsp.exec_cmd(scripts .. "/lanzador.sh"))
 hl.bind("SUPER + B",         hl.dsp.exec_cmd(scripts .. "/barra.sh reiniciar"))
+hl.bind("SUPER + SHIFT + B", hl.dsp.exec_cmd(scripts .. "/barra-estilo.sh menu"))    -- estilo de la barra
 hl.bind("SUPER + N",         hl.dsp.exec_cmd("swaync-client -t -sw"))
 hl.bind("SUPER + SHIFT + N", hl.dsp.exec_cmd(scripts .. "/red.sh"))
 hl.bind("SUPER + SHIFT + P", hl.dsp.exec_cmd(scripts .. "/paleta.sh menu"))

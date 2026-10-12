@@ -59,7 +59,11 @@ const RUTA_COLORES = `${CFG}/ags/colores.css`
 const COLORES_DEFECTO = `
 @define-color fondo #0b0b12; @define-color fondo2 #1a1a28; @define-color tenue #8a8aa3;
 @define-color texto #e6e6f0; @define-color acento #22d3ee; @define-color acento2 #ec4899;
-@define-color sobre #0b0b12; @define-color inactivo #2a2a3a;`
+@define-color sobre #0b0b12; @define-color inactivo #2a2a3a;
+@define-color medio #878fc3; @define-color sombra #050508; @define-color rojo #f87171;
+@define-color verde #4ade80; @define-color amarillo #facc15; @define-color azul #60a5fa;
+@define-color magenta #c084fc; @define-color cyan #22d3ee; @define-color root_fondo #fefefe;
+@define-color root_texto #1c1c1e; @define-color root_borde #d1d1d3;`
 
 function leerColores(): string {
   try {
@@ -70,22 +74,76 @@ function leerColores(): string {
   }
 }
 
-let monitorColores: unknown = null
+// ── Estilo de la barra (Super + Shift + B) ──
+// La forma se elige aparte de la paleta: barra-estilo.sh escribe el nombre en
+// ~/.config/rice-barra/estilo y aquí se carga ~/.config/ags/estilos/<nombre>.css encima de style.css.
+// 48 paletas × cada estilo, combinables; se aplica en vivo, sin reiniciar la barra.
+const RUTA_ESTILO = `${CFG}/rice-barra/estilo`
+const DIR_ESTILOS = `${CFG}/ags/estilos`
+
+function leerEstiloBarra(): string {
+  try {
+    const nombre = readFile(RUTA_ESTILO).trim()
+    if (!/^[a-z0-9_-]+$/.test(nombre)) return ""
+    return readFile(`${DIR_ESTILOS}/${nombre}.css`)
+  } catch {
+    return "" // sin estilo elegido: style.css tal cual (islas)
+  }
+}
+
+const cssCompleto = () => `${leerColores()}\n${estilo}\n${leerEstiloBarra()}`
+
+const monitores: unknown[] = []
 function vigilarColores() {
   let espera: ReturnType<typeof setTimeout> | null = null
-  monitorColores = monitorFile(RUTA_COLORES, () => {
-    // paleta.sh escribe el archivo en varios pasos: esperamos a que termine
+  const repintar = () => {
+    // paleta.sh y barra-estilo.sh escriben en varios pasos: esperamos a que terminen
     if (espera) clearTimeout(espera)
     espera = setTimeout(() => {
       espera = null
-      app.apply_css(leerColores() + "\n" + estilo, true)
+      app.apply_css(cssCompleto(), true)
     }, 250)
-  })
+  }
+  monitores.push(monitorFile(RUTA_COLORES, repintar))
+  monitores.push(monitorFile(RUTA_ESTILO, repintar))
 }
 
 
 // Pasa por ws3d.tsx: si elegiste un efecto 3D (Super + Shift + E) lo dibuja; si no, cambia normal
 const irAWorkspace = (id: number) => cambiarWorkspace(`${id}`)
+
+// ── Módulo que se expande al pasar el mouse ──
+// Muestra lo esencial y, al pasar el mouse, desliza el resto. Al salir espera un poco
+// antes de cerrarse para que no tiemble si el mouse roza el borde.
+function Expandible({ clase, base, extra }: { clase: string; base: JSX.Element; extra: JSX.Element }) {
+  const [abierto, setAbierto] = createState(false)
+  let cierre: ReturnType<typeof setTimeout> | null = null
+  const abrir = () => {
+    if (cierre) clearTimeout(cierre)
+    cierre = null
+    setAbierto(true)
+  }
+  const cerrar = () => {
+    if (cierre) clearTimeout(cierre)
+    cierre = setTimeout(() => {
+      cierre = null
+      setAbierto(false)
+    }, 350)
+  }
+  return (
+    <box class={abierto.as((a) => (a ? `${clase} expandible abierto` : `${clase} expandible`))}>
+      <Gtk.EventControllerMotion onEnter={abrir} onLeave={cerrar} />
+      {base}
+      <revealer
+        revealChild={abierto}
+        transitionType={Gtk.RevealerTransitionType.SLIDE_RIGHT}
+        transitionDuration={280}
+      >
+        {extra}
+      </revealer>
+    </box>
+  )
+}
 
 // ── ¿Hay un shell de root en la ventana enfocada? ──
 // Busca procesos bash/zsh/fish/sh de root que cuelguen de la ventana activa (ej: después de "su" o "sudo -i")
@@ -272,14 +330,23 @@ function Titulo() {
 }
 
 // ── Reloj con calendario ──
+// Una sola lectura para todos los monitores
+const hora = createPoll("", 1000, () => GLib.DateTime.new_now_local().format("%H:%M")!)
+const fecha = createPoll("", 60000, () => GLib.DateTime.new_now_local().format("%A %d %B")!)
+
 function Reloj() {
-  const hora = createPoll("", 1000, () => GLib.DateTime.new_now_local().format("%a %d %b   %H:%M")!)
   return (
-    <menubutton class="modulo reloj">
-      <box spacing={8}>
-        <label class="icono" label={ICO.reloj} />
-        <label label={hora} />
-      </box>
+    <menubutton class="modulo reloj" tooltipText="Clic: calendario">
+      <Expandible
+        clase="reloj-interior"
+        base={
+          <box spacing={8}>
+            <label class="icono" label={ICO.reloj} />
+            <label class="hora" label={hora} />
+          </box>
+        }
+        extra={<label class="fecha" label={fecha} />}
+      />
       <popover>
         <Gtk.Calendar />
       </popover>
@@ -298,12 +365,99 @@ function elegirReproductor() {
   for (const p of lista) {
     if (conectados.has(p)) continue
     conectados.add(p)
-    p.connect("notify::playback-status", elegirReproductor)
+    p.connect("notify::playback-status", () => {
+      elegirReproductor()
+      activarCava()
+    })
   }
   const nuevo = lista.find((p) => p.playbackStatus === AstalMpris.PlaybackStatus.PLAYING) ?? lista[0] ?? null
   if (nuevo !== reproductor.get()) setReproductor(nuevo)
 }
-mpris.connect("notify::players", elegirReproductor)
+
+// ── Visualizador de audio (AstalCava) ──
+// Se carga con import() dinámico: si tu libastal no trae cava, la barra sigue igual, sin espectro.
+// Solo escucha el audio mientras algo suena, para no gastar CPU de más.
+const BARRAS_CAVA = 10
+const [hayCava, setHayCava] = createState(false)
+let cava: any = null
+let valoresCava: number[] = []
+const areasCava = new Set<Gtk.DrawingArea>()
+
+function sonando(): boolean {
+  return mpris.players.some((p) => p.playbackStatus === AstalMpris.PlaybackStatus.PLAYING)
+}
+
+function activarCava() {
+  if (!cava) return
+  const on = sonando()
+  try {
+    if (cava.active !== on) cava.active = on
+  } catch {
+    // versiones viejas sin la propiedad "active": siempre activo
+  }
+  if (!on) {
+    valoresCava = []
+    areasCava.forEach((a) => a.queue_draw())
+  }
+}
+
+async function iniciarCava() {
+  try {
+    // @ts-ignore: los tipos de AstalCava pueden no estar generados
+    const modulo = await import("gi://AstalCava")
+    const AstalCava = modulo.default ?? modulo
+    const c = AstalCava.get_default()
+    if (!c) return
+    c.bars = BARRAS_CAVA
+    try {
+      c.framerate = 30
+    } catch {}
+    c.connect("notify::values", () => {
+      valoresCava = c.values ?? c.get_values?.() ?? []
+      areasCava.forEach((a) => a.queue_draw())
+    })
+    cava = c
+    activarCava()
+    setHayCava(true)
+  } catch (e) {
+    console.log(`Sin visualizador de audio (AstalCava no disponible): ${e}`)
+  }
+}
+
+function Espectro() {
+  return (
+    <Gtk.DrawingArea
+      class="cava"
+      visible={hayCava}
+      widthRequest={BARRAS_CAVA * 4 + (BARRAS_CAVA - 1) * 2}
+      heightRequest={14}
+      valign={Gtk.Align.CENTER}
+      $={(area: Gtk.DrawingArea) => {
+        areasCava.add(area)
+        area.connect("destroy", () => areasCava.delete(area))
+        area.set_draw_func((a: Gtk.DrawingArea, cr: any, w: number, h: number) => {
+          // el color sale del CSS (.cava { color: ... }), así sigue a la paleta
+          const c = (a as any).get_color?.() ?? { red: 1, green: 1, blue: 1, alpha: 1 }
+          const gap = 2
+          const ancho = (w - gap * (BARRAS_CAVA - 1)) / BARRAS_CAVA
+          cr.setSourceRGBA(c.red, c.green, c.blue, c.alpha)
+          for (let i = 0; i < BARRAS_CAVA; i++) {
+            const v = Math.min(1, Math.max(0, valoresCava[i] ?? 0))
+            const alto = Math.max(2, v * h)
+            cr.rectangle(i * (ancho + gap), h - alto, ancho, alto)
+          }
+          cr.fill()
+          cr.$dispose?.()
+        })
+      }}
+    />
+  )
+}
+
+mpris.connect("notify::players", () => {
+  elegirReproductor()
+  activarCava()
+})
 elegirReproductor()
 
 function Musica() {
@@ -322,6 +476,7 @@ function Musica() {
           return (
             <box spacing={10}>
               <label class="icono" label={ICO.musica} />
+              <Espectro />
               <label class="cancion" maxWidthChars={26} ellipsize={Pango.EllipsizeMode.END} label={texto} />
               <button class="control" onClicked={() => p.previous()}>
                 <label label={ICO.ant} />
@@ -449,17 +604,25 @@ function Red() {
           .join("\n"),
       )}
     >
-      <box spacing={8}>
-        <image iconName="network-wired-symbolic" visible={red.as((r) => r.cable)} />
-        <image iconName={red.as((r) => iconoWifi(r.senal))} visible={red.as((r) => !!r.wifi)} />
-        <image iconName="network-offline-symbolic" visible={red.as((r) => !r.cable && !r.wifi)} />
-        <label
-          maxWidthChars={14}
-          ellipsize={Pango.EllipsizeMode.END}
-          label={red.as((r) => r.wifi || (r.cable ? "Cable" : "Sin red"))}
-        />
-        <image class="tailscale" iconName="network-vpn-symbolic" visible={red.as((r) => !!r.tailscale)} />
-      </box>
+      <Expandible
+        clase="red-interior"
+        base={
+          <box spacing={8}>
+            <image iconName="network-wired-symbolic" visible={red.as((r) => r.cable)} />
+            <image iconName={red.as((r) => iconoWifi(r.senal))} visible={red.as((r) => !!r.wifi)} />
+            <image iconName="network-offline-symbolic" visible={red.as((r) => !r.cable && !r.wifi)} />
+            <image class="tailscale" iconName="network-vpn-symbolic" visible={red.as((r) => !!r.tailscale)} />
+          </box>
+        }
+        extra={
+          <label
+            class="detalle"
+            maxWidthChars={16}
+            ellipsize={Pango.EllipsizeMode.END}
+            label={red.as((r) => (r.wifi ? `${r.wifi}  ${r.senal}%` : r.cable ? "Cable" : "Sin red"))}
+          />
+        }
+      />
     </button>
   )
 }
@@ -514,17 +677,32 @@ const ram = createPoll(0, 2000, leerRam)
 const temp = createPoll(0, 5000, leerTemp)
 const disco = createPoll("", 60000, leerDisco)
 
+const ICO_DISCO = "\uF0A0"
+const discoCorto = disco.as((d) => d.match(/\((\d+%)\)/)?.[1] ?? "")
+
 function Sistema() {
   return (
-    <box class="modulo sistema" spacing={14} tooltipText={disco}>
-      <label label={cpu.as((v) => `${ICO.cpu}  ${v}%`)} />
-      <label label={ram.as((v) => `${ICO.ram}  ${v}%`)} />
-      <label
-        visible={temp.as((t) => t > 0)}
-        class={temp.as((t) => (t >= 80 ? "caliente" : ""))}
-        label={temp.as((t) => `${ICO.temp} ${t}°`)}
-      />
-    </box>
+    <Expandible
+      clase="modulo sistema"
+      base={
+        <box spacing={14} tooltipText={disco}>
+          <label label={cpu.as((v) => `${ICO.cpu}  ${v}%`)} />
+          {/* la temperatura alta nunca se esconde */}
+          <label
+            visible={temp.as((t) => t >= 80)}
+            class="caliente"
+            label={temp.as((t) => `${ICO.temp} ${t}°`)}
+          />
+        </box>
+      }
+      extra={
+        <box spacing={14} class="detalle">
+          <label label={ram.as((v) => `${ICO.ram}  ${v}%`)} />
+          <label visible={temp.as((t) => t > 0 && t < 80)} label={temp.as((t) => `${ICO.temp} ${t}°`)} />
+          <label visible={discoCorto.as((d) => d !== "")} label={discoCorto.as((d) => `${ICO_DISCO}  ${d}`)} />
+        </box>
+      }
+    />
   )
 }
 
@@ -616,9 +794,10 @@ function Paletas() {
   return (
     <button
       class="modulo boton"
-      tooltipText="Cambiar paleta de colores"
+      tooltipText="Clic: paleta de colores · Clic derecho: estilo de la barra"
       onClicked={() => run([`${SCRIPTS}/paleta.sh`, "menu"])}
     >
+      <Gtk.GestureClick button={3} onPressed={() => run([`${SCRIPTS}/barra-estilo.sh`, "menu"])} />
       <label label={ICO.paleta} />
     </button>
   )
@@ -914,7 +1093,7 @@ function Barra({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
 }
 
 app.start({
-  css: leerColores() + "\n" + estilo,
+  css: cssCompleto(),
   requestHandler: atenderPedido, // ws3d.sh → "ags request ws 3"
   gtkTheme: "Adwaita",
   main() {
@@ -926,6 +1105,7 @@ app.start({
     app.connect("shutdown", pararNotis)
     vigilarVolumen()
     vigilarBrillo()
+    iniciarCava()
     setTimeout(() => (osdListo = true), 2000)
 
     const monitores = createBinding(app, "monitors")
