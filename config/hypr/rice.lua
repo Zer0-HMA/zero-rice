@@ -98,7 +98,7 @@ end
 --------------------------------------
 hl.layer_rule({
     name  = "zero-blur",
-    match = { namespace = "^(barra-zero|osd-zero|rofi|swaync-control-center|swaync-notification-window)$" },
+    match = { namespace = "^(barra-zero|osd-zero|zero-panel|rofi|swaync-control-center|swaync-notification-window)$" },
     blur         = true,
     ignore_alpha = 0.3,
 })
@@ -115,7 +115,7 @@ hl.window_rule({
 ----------------
 for _, k in ipairs({ "SUPER + R", "SUPER + L", "SUPER + SHIFT + L", "SUPER + SHIFT + V", "SUPER + SHIFT + F",
                      "SUPER + SHIFT + A", "Print", "SHIFT + Print", "SUPER + Print", "SUPER + SHIFT + Print",
-                     "SUPER + SHIFT + S", "SUPER + SHIFT + B" }) do
+                     "SUPER + SHIFT + S", "SUPER + SHIFT + B", "SUPER + A" }) do
     hl.unbind(k)
 end
 
@@ -123,6 +123,7 @@ end
 hl.bind("SUPER + R",         hl.dsp.exec_cmd(scripts .. "/lanzador.sh"))
 hl.bind("SUPER + B",         hl.dsp.exec_cmd(scripts .. "/barra.sh reiniciar"))
 hl.bind("SUPER + SHIFT + B", hl.dsp.exec_cmd(scripts .. "/barra-estilo.sh menu"))    -- estilo de la barra
+hl.bind("SUPER + A",         hl.dsp.exec_cmd("ags request panel"))                   -- panel de control
 hl.bind("SUPER + N",         hl.dsp.exec_cmd("swaync-client -t -sw"))
 hl.bind("SUPER + SHIFT + N", hl.dsp.exec_cmd(scripts .. "/red.sh"))
 hl.bind("SUPER + SHIFT + P", hl.dsp.exec_cmd(scripts .. "/paleta.sh menu"))
@@ -170,6 +171,12 @@ do
     hl.bind("SUPER + SHIFT + E",  hl.dsp.exec_cmd(ws3d .. " menu"))
 end
 -- la capa del efecto aparece y se va de golpe (la animación la hace ella misma)
+-- el panel de control se despliega solo (revealer); el zoom de Hyprland atenuaría toda la pantalla
+hl.layer_rule({
+    name    = "zero-panel",
+    match   = { namespace = "^zero-panel$" },
+    no_anim = true,
+})
 hl.layer_rule({
     name    = "zero-ws3d",
     match   = { namespace = "^zero-ws3d$" },

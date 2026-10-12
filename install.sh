@@ -30,7 +30,7 @@ VERSION=$(cat "$REPO/VERSION" 2>/dev/null || echo "?")
 # scripts y archivos de la barra que instala el rice (una sola lista para instalar y desinstalar)
 SCRIPTS=(wall paleta red barra barra-estilo captura lanzador panel clima elegir-fondo temp portapapeles ws3d perfil animaciones zero-lock)
 LIBS=(color plantillas fondos dinamica fondoactual)
-AGS=(app.tsx style.css ws3d.tsx efectos3d.ts)
+AGS=(app.tsx style.css ws3d.tsx efectos3d.ts panel.tsx)
 
 SI=0; SOLO_CONFIGS=0; PALETA=""; MODO="instalar"; NVIM=1
 # modo enlazado: se recuerda entre corridas (así --actualizar no lo deshace)
@@ -185,6 +185,7 @@ else
     thunar gvfs tumbler                                            # archivos
     hyprlock hypridle hyprpolkitagent xdg-desktop-portal-hyprland  # bloqueo, contraseñas, compartir pantalla
     cliphist                                                       # historial del portapapeles
+    hyprsunset                                                     # luz nocturna (panel de control)
     kernel-modules-hook                                            # actualizar el kernel sin romper nada hasta reiniciar
     base-devel git                                                 # para el AUR
   )
@@ -580,6 +581,7 @@ cat <<'RESUMEN'
   Super + L              bloquear       ·   Super + Shift + L  personalizar el bloqueo
   Super + Shift + V      portapapeles   ·   Super + Shift + F  foto de perfil
   Super + Shift + A      animaciones    ·   Super + Shift + E  efecto 3D de los workspaces
+  Super + A              panel de control (Wi-Fi, bluetooth, volumen, música…)
   Super + B              reiniciar la barra  ·  Super + Shift + B  estilo de la barra
   nvim                   Neovim con tu paleta  ·  Espacio + z  atajos del rice
   Impr Pant              captura de área ·  Shift/Super + Impr Pant  pantalla/ventana

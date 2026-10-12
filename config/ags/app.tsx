@@ -17,6 +17,7 @@ import { createPoll } from "ags/time"
 import { execAsync, subprocess } from "ags/process"
 import { readFile, monitorFile } from "ags/file"
 import { CapaWs3D, cambiarWorkspace, atenderPedido } from "./ws3d"
+import { PanelControl, configurarPanel, atenderPanel, alternarPanel } from "./panel"
 import estilo from "./style.css"
 
 // ── Iconos (JetBrainsMono Nerd Font) ──
@@ -36,6 +37,7 @@ const ICO = {
   paleta: "\u{F03D8}",
   campana: "\uF0F3",
   campanaOff: "\uF1F6",
+  ajustes: "\uF1DE",
   power: "\uF011",
   candado: "\uF023",
   luna: "\uF186",
@@ -115,7 +117,7 @@ const irAWorkspace = (id: number) => cambiarWorkspace(`${id}`)
 // ── Módulo que se expande al pasar el mouse ──
 // Muestra lo esencial y, al pasar el mouse, desliza el resto. Al salir espera un poco
 // antes de cerrarse para que no tiemble si el mouse roza el borde.
-function Expandible({ clase, base, extra }: { clase: string; base: JSX.Element; extra: JSX.Element }) {
+function Expandible({ clase, base, extra }: { clase: string; base: any; extra: any }) {
   const [abierto, setAbierto] = createState(false)
   let cierre: ReturnType<typeof setTimeout> | null = null
   const abrir = () => {
@@ -803,6 +805,15 @@ function Paletas() {
   )
 }
 
+// ── Botón del panel de control (Super + A) ──
+function BotonPanel() {
+  return (
+    <button class="modulo boton panel-boton" tooltipText="Panel de control (Super + A)" onClicked={() => alternarPanel()}>
+      <label label={ICO.ajustes} />
+    </button>
+  )
+}
+
 // ── Notificaciones: contador en vivo y No molestar ──
 // Escucha a swaync (swaync-client -swb avisa cada cambio), así que no hace polling.
 type EstadoNotis = { cuantas: number; dnd: boolean }
@@ -1084,6 +1095,7 @@ function Barra({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
           <Volumen />
           <Bateria />
           <Paletas />
+          <BotonPanel />
           <Notis />
           <Energia />
         </box>
@@ -1094,7 +1106,10 @@ function Barra({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
 
 app.start({
   css: cssCompleto(),
-  requestHandler: atenderPedido, // ws3d.sh → "ags request ws 3"
+  // ws3d.sh → "ags request ws 3" · Super + A → "ags request panel"
+  requestHandler: (argv: string[], responder: (r: string) => void) => {
+    if (!atenderPanel(argv, responder)) atenderPedido(argv, responder)
+  },
   gtkTheme: "Adwaita",
   main() {
     vigilarColores()
@@ -1106,6 +1121,7 @@ app.start({
     vigilarVolumen()
     vigilarBrillo()
     iniciarCava()
+    configurarPanel({ avatar, nombre, notis, red, refrescarRed, reproductor, scripts: SCRIPTS })
     setTimeout(() => (osdListo = true), 2000)
 
     const monitores = createBinding(app, "monitors")
@@ -1116,6 +1132,7 @@ app.start({
             <Barra gdkmonitor={monitor} />
             <OSD gdkmonitor={monitor} />
             <CapaWs3D gdkmonitor={monitor} />
+            <PanelControl gdkmonitor={monitor} />
           </This>
         )}
       </For>

@@ -11,3 +11,4 @@
 .barra .icono, .barra .sistema, .barra .volumen { text-shadow: 0 0 6px alpha(@acento, 0.8); }
 .barra .workspaces button.activo { box-shadow: 0 0 10px alpha(@acento, 0.6); }
 .barra .reloj label { text-shadow: 0 0 6px alpha(@acento, 0.6); }
+.panel { border-color: alpha(@acento, 0.8); box-shadow: 0 0 18px alpha(@acento, 0.35), 0 12px 32px alpha(@sombra, 0.6); }

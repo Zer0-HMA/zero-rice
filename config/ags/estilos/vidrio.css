@@ -7,3 +7,5 @@
 }
 .barra .modulo:hover { background-color: alpha(@fondo, 0.60); border-color: alpha(@texto, 0.28); }
 .barra .workspaces button.activo { background-image: none; background-color: alpha(@texto, 0.85); color: @fondo; }
+.panel { background-color: alpha(@fondo, 0.55); border-color: alpha(@texto, 0.16); }
+.panel-tarjeta, .panel .rapido { background-color: alpha(@texto, 0.07); }

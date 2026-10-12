@@ -63,7 +63,7 @@ window.barra {
   background-image: linear-gradient(to right, @acento, @acento2);
 }
 
-.barra .titulo { color: @tenue; padding: 0 6px; }
+.barra .titulo { color: @tenue; padding: 0 6px; text-shadow: 0 1px 3px alpha(@sombra, 0.9); }
 
 /* Música */
 .barra .musica .cancion { color: @texto; }
@@ -213,3 +213,96 @@ window.ws3d { background: transparent; }
 .barra .notis.hay .contador     { animation: latido 1.8s ease-in-out infinite; }
 .barra .bateria.baja            { animation: latido 1.2s ease-in-out infinite; }
 .barra .sistema .caliente       { animation: latido 1.2s ease-in-out infinite; }
+
+/* ══════ Panel de control (panel.tsx · Super + A) ══════ */
+window.panel-ventana {
+  background: transparent;
+  font-family: "JetBrainsMono Nerd Font", monospace;
+  font-size: 13px;
+  color: @texto;
+}
+/* el resto de la pantalla se oscurece apenas (menos de 0.3: Hyprland no lo desenfoca) */
+.panel-fondo { background-color: transparent; transition: background-color 260ms ease; }
+.panel-fondo.visible { background-color: alpha(@sombra, 0.22); }
+
+.panel {
+  margin: 8px 12px 12px 0;
+  padding: 16px;
+  background-color: alpha(@fondo, 0.93);
+  border: 1px solid alpha(@acento, 0.35);
+  border-radius: 20px;
+  box-shadow: 0 12px 32px alpha(@sombra, 0.6);
+}
+.panel button {
+  background: none;
+  border: none;
+  box-shadow: none;
+  outline: none;
+  min-height: 0;
+  min-width: 0;
+  color: inherit;
+}
+
+/* cabecera */
+.panel-avatar { border-radius: 50%; box-shadow: 0 0 0 2px alpha(@acento, 0.85); }
+.panel-nombre { font-size: 15px; font-weight: bold; }
+.panel-uptime { color: @tenue; font-size: 11px; }
+.panel .panel-circulo {
+  min-width: 36px; min-height: 36px;
+  border-radius: 50%;
+  background-color: @fondo2;
+  font-size: 15px;
+  transition: all 180ms ease;
+}
+.panel .panel-circulo:hover { background-color: @acento; color: @sobre; }
+
+/* botones rápidos: apagados en tono de fondo, encendidos con el degradado de tu paleta */
+.panel .rapido {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background-color: @fondo2;
+  transition: all 200ms ease;
+}
+.panel .rapido:hover { background-color: mix(@fondo2, @acento, 0.15); }
+.panel .rapido.activo { background-image: linear-gradient(135deg, @acento, @acento2); color: @sobre; }
+.panel .rapido.activo .rapido-sub { color: alpha(@sobre, 0.75); }
+.rapido-icono { font-size: 17px; min-width: 22px; }
+.rapido-titulo { font-weight: bold; }
+.rapido-sub { font-size: 11px; color: @tenue; }
+
+/* tarjetas */
+.panel-tarjeta {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background-color: alpha(@fondo2, 0.65);
+}
+.panel-valor { color: @tenue; font-size: 12px; }
+.panel .panel-mini { color: @acento; padding: 2px 4px; border-radius: 8px; font-size: 14px; min-width: 24px; }
+.panel .panel-mini:hover { background-color: alpha(@acento, 0.15); }
+.panel .icono-brillo { color: @acento; }
+.panel scale trough { background-color: @fondo; border-radius: 8px; min-height: 6px; }
+.panel scale highlight { background-image: linear-gradient(to right, @acento, @acento2); border-radius: 8px; }
+.panel scale slider { background-color: @texto; border-radius: 50%; min-width: 14px; min-height: 14px; margin: -4px; box-shadow: none; }
+
+/* música */
+.panel-portada { border-radius: 12px; min-width: 64px; min-height: 64px; background-color: @fondo; }
+.panel-sin-portada { font-size: 24px; color: @acento; margin: 20px; }
+.panel-cancion { font-weight: bold; }
+.panel-artista { color: @tenue; font-size: 12px; }
+.panel-tiempo { color: @tenue; font-size: 11px; }
+.panel .panel-play { background-color: @acento; color: @sobre; border-radius: 50%; min-width: 26px; min-height: 26px; }
+.panel .panel-progreso trough { min-height: 4px; }
+.panel .panel-progreso slider { min-width: 10px; min-height: 10px; margin: -3px; }
+
+/* calendario plegable */
+.panel .panel-fecha { padding: 2px 0; }
+.panel-flecha { color: @tenue; font-size: 11px; }
+.panel-calendario calendar { margin-top: 10px; }
+.panel-calendario calendar { background: transparent; border: none; color: @texto; }
+.panel-calendario calendar > grid > label.day-number.other-month { color: alpha(@tenue, 0.4); }
+
+/* accesos a los menús del rice */
+.panel .panel-acceso { padding: 8px 2px; border-radius: 12px; transition: all 180ms ease; }
+.panel .panel-acceso:hover { background-color: @fondo2; }
+.panel-acceso-icono { font-size: 17px; color: @acento; }
+.panel-acceso-texto { font-size: 10px; color: @tenue; }
