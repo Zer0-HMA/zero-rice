@@ -12,6 +12,7 @@
 #   ./install.sh --version         muestra la versión
 #   ./install.sh --enlazar         en vez de copiar, enlaza ~/.config al repo (para desarrollar el rice)
 #   ./install.sh --copiar          vuelve a copias normales después de --enlazar
+#   ./install.sh --sin-nvim        no instala ni toca Neovim
 #
 #   Paletas: 48 (acero, tokyo, dracula, kanagawa, synthwave...). Lista completa: paleta.sh lista
 # ╚══════════════════════════════════════════════════════════════════╝
@@ -27,11 +28,11 @@ RESPALDO="$CFG/rice-respaldo-$(date +%Y%m%d-%H%M%S)"
 VERSION=$(cat "$REPO/VERSION" 2>/dev/null || echo "?")
 
 # scripts y archivos de la barra que instala el rice (una sola lista para instalar y desinstalar)
-SCRIPTS=(wall paleta red barra captura lanzador panel clima elegir-fondo temp portapapeles ws3d perfil animaciones zero-lock)
+SCRIPTS=(wall paleta red barra barra-estilo captura lanzador panel clima elegir-fondo temp portapapeles ws3d perfil animaciones zero-lock)
 LIBS=(color plantillas fondos dinamica fondoactual)
 AGS=(app.tsx style.css ws3d.tsx efectos3d.ts)
 
-SI=0; SOLO_CONFIGS=0; PALETA=""; MODO="instalar"
+SI=0; SOLO_CONFIGS=0; PALETA=""; MODO="instalar"; NVIM=1
 # modo enlazado: se recuerda entre corridas (así --actualizar no lo deshace)
 ENLAZAR=$(cat "$ESTADO/modo-enlazado" 2>/dev/null || echo 0)
 for arg in "$@"; do
@@ -43,6 +44,7 @@ for arg in "$@"; do
     --desinstalar)  MODO="desinstalar" ;;
     --enlazar)      ENLAZAR=1 ;;
     --copiar)       ENLAZAR=0 ;;
+    --sin-nvim)     NVIM=0 ;;
     -h|--help)      sed -n '2,18p' "$0"; exit 0 ;;
     -v|--version)   echo "zero-rice $VERSION"; exit 0 ;;
     *) echo "Opción desconocida: $arg (usa --help)"; exit 1 ;;
@@ -118,10 +120,12 @@ desinstalar() {
     "$CFG/hypr/rice.lua" "$CFG/hypr/colores.lua" "$CFG/hypr/animaciones.lua" "$CFG/hypr/hyprlock-colores.conf" "$S/lib"
     "$CFG/ags" "$CFG/rofi" "$CFG/swaync" "$CFG/kitty/paleta.conf"
     "$CFG/rice-paletas" "$CFG/rice-plantillas" "$CFG/rice-terminal" "$CFG/rice-clima" "$CFG/rice-lanzador"
-    "$CFG/rice-ws3d" "$CFG/rice-animaciones" "$CFG/zero-lock"
+    "$CFG/rice-ws3d" "$CFG/rice-animaciones" "$CFG/zero-lock" "$CFG/rice-barra" "$CFG/rice-nvim"
     "$CFG/gtk-3.0/zero-paleta.css" "$CFG/gtk-4.0/zero-paleta.css"
   )
   for s in "${SCRIPTS[@]}"; do cosas+=("$S/$s.sh"); done
+  # Neovim solo si es el de ZERO (si era tuyo, se queda)
+  [[ -f "$CFG/nvim/lua/zero/init.lua" ]] && cosas+=("$CFG/nvim")
   # hyprlock/hypridle solo si son los del rice (si eran tuyos, se quedan)
   head -1 "$CFG/hypr/hyprlock.conf" 2>/dev/null | grep -q 'Generado por paleta.sh' && cosas+=("$CFG/hypr/hyprlock.conf")
   grep -q '(zero-rice)' "$CFG/hypr/hypridle.conf" 2>/dev/null && cosas+=("$CFG/hypr/hypridle.conf")
@@ -161,7 +165,7 @@ if [[ "$MODO" == actualizar ]]; then
     warn "Esta carpeta no es un repo de git; uso los archivos tal como están."
   fi
   # se relanza la versión recién bajada de este mismo script (por si cambió)
-  otras=(--solo-configs); ((SI)) && otras+=(--si); [[ -n "$PALETA" ]] && otras+=("--paleta=$PALETA")
+  otras=(--solo-configs); ((SI)) && otras+=(--si); ((NVIM)) || otras+=(--sin-nvim); [[ -n "$PALETA" ]] && otras+=("--paleta=$PALETA")
   exec bash "$REPO/install.sh" "${otras[@]}"
 fi
 
@@ -238,6 +242,17 @@ else
     info "Si usas otra cosa para la red (iwd, systemd-networkd), contesta que no."
     preguntar "¿Activo NetworkManager?" && sudo systemctl enable --now NetworkManager && ok "NetworkManager activado"
   fi
+
+  if ((NVIM)); then
+    titulo "Neovim (LazyVim)"
+    NVIM_PAQ=(neovim ripgrep fd lazygit fzf nodejs npm unzip tree-sitter-cli)
+    info "Se instalarán los que falten de: ${NVIM_PAQ[*]}"
+    if preguntar "¿Instalo Neovim y lo que LazyVim necesita?"; then
+      noconf=(); ((SI)) && noconf=(--noconfirm)
+      if sudo pacman -S --needed "${noconf[@]}" "${NVIM_PAQ[@]}"; then ok "Neovim y sus herramientas listos"
+      else warn "No se pudieron instalar los paquetes de Neovim; revisa arriba."; fi
+    fi
+  fi
 fi
 
 # ═════════════════════════ 2. Versiones ═════════════════════════
@@ -271,6 +286,16 @@ if command -v ags >/dev/null 2>&1; then
   else warn "AGS ${v:-?}: la barra necesita AGS 3 o más nuevo"; fi
 else
   warn "AGS no está instalado: no habrá barra (yay -S aylurs-gtk-shell-git libastal-meta)"
+fi
+if compgen -G "/usr/lib/girepository-1.0/AstalCava-*.typelib" >/dev/null; then
+  ok "AstalCava: espectro de audio en la barra"
+else
+  info "Sin AstalCava: la barra funciona igual, pero sin espectro de audio (yay -S libastal-cava-git)"
+fi
+if ((NVIM)) && command -v nvim >/dev/null 2>&1; then
+  nv=$(nvim --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+' | head -1 || true)
+  if [[ -n "$nv" ]] && (( ${nv%%.*} > 0 || ${nv#*.} >= 11 )); then ok "Neovim $nv"
+  else warn "Neovim ${nv:-?}: LazyVim necesita 0.11 o más nuevo (sudo pacman -Syu neovim)"; fi
 fi
 
 # ═════════════════════════ 3. Configuraciones ═════════════════════════
@@ -320,7 +345,12 @@ fi
 for f in "${AGS[@]}"; do
   instalar "ags/$f" "$CFG/ags/$f"
 done
-ok "Barra → ~/.config/ags (con OSD, perfil y workspaces 3D)"
+for e in "$SRC"/ags/estilos/*.css; do
+  instalar "ags/estilos/$(basename "$e")" "$CFG/ags/estilos/$(basename "$e")"
+done
+mkdir -p "$CFG/rice-barra"
+[[ -f "$CFG/rice-barra/estilo" ]] || printf 'islas\n' > "$CFG/rice-barra/estilo"   # tu elección se conserva al actualizar
+ok "Barra → ~/.config/ags (OSD, perfil, workspaces 3D y estilo: $(cat "$CFG/rice-barra/estilo"); cámbialo con Super + Shift + B)"
 
 instalar rofi/config.rasi          "$CFG/rofi/config.rasi"
 instalar rofi/themes/lanzador.rasi "$CFG/rofi/themes/lanzador.rasi"
@@ -328,6 +358,33 @@ ok "Rofi → lanzador"
 
 instalar swaync/config.json "$CFG/swaync/config.json"
 ok "SwayNC → notificaciones"
+
+# Neovim: LazyVim con los colores de tu paleta. Si ya tenías una config tuya, se pregunta antes.
+if ((NVIM)); then
+  NV="$CFG/nvim"; poner_nvim=1
+  if [[ -d "$NV" && ! -f "$NV/lua/zero/init.lua" && -n "$(ls -A "$NV" 2>/dev/null)" ]]; then
+    warn "Ya tienes una configuración de Neovim en $NV."
+    if preguntar "¿La respaldo y pongo la de ZERO (LazyVim con tu paleta)?"; then
+      mkdir -p "$RESPALDO"
+      mv "$NV" "$RESPALDO/nvim"
+      # sus plugins y datos también se apartan, para que LazyVim empiece limpio
+      for d in "${XDG_DATA_HOME:-$HOME/.local/share}/nvim" "${XDG_STATE_HOME:-$HOME/.local/state}/nvim" "${XDG_CACHE_HOME:-$HOME/.cache}/nvim"; do
+        [[ -d "$d" ]] && mv "$d" "$RESPALDO/nvim-$(basename "$(dirname "$d")")"
+      done
+      ok "Tu Neovim anterior quedó en $RESPALDO/nvim"
+    else
+      poner_nvim=0; info "No toqué tu Neovim (usa --sin-nvim para que no vuelva a preguntar)."
+    fi
+  fi
+  if ((poner_nvim)); then
+    while IFS= read -r -d '' f; do
+      rel=${f#"$SRC/"}
+      instalar "$rel" "$CFG/$rel"
+    done < <(find "$SRC/nvim" -type f -print0)
+    mkdir -p "$CFG/rice-nvim"
+    ok "Neovim → ~/.config/nvim (LazyVim con tu paleta · tus cambios en lua/plugins/mio.lua)"
+  fi
+fi
 
 if [[ -f "$CFG/hypr/hypridle.conf" ]] && ! grep -q '(zero-rice)' "$CFG/hypr/hypridle.conf"; then
   info "Ya tenías hypridle.conf: no lo toqué (para usar zero-lock pon:  lock_cmd = pidof hyprlock || $S/zero-lock.sh lock)"
@@ -466,7 +523,18 @@ else
   warn "Faltan curl/jq para el clima"
 fi
 
-# ═════════════════════════ 6. Aplicar ═════════════════════════
+# ═════════════════════════ 6. Neovim ═════════════════════════
+if ((NVIM)) && command -v nvim >/dev/null 2>&1 && [[ -f "$CFG/nvim/lua/zero/init.lua" ]] \
+   && [[ ! -d "${XDG_DATA_HOME:-$HOME/.local/share}/nvim/lazy/LazyVim" ]]; then
+  titulo "Plugins de Neovim"
+  if preguntar "¿Descargo los plugins de LazyVim ahora? (1–3 min; si no, se bajan la primera vez que abras nvim)"; then
+    info "Descargando plugins..."
+    if timeout 900 nvim --headless "+Lazy! sync" +qa >/dev/null 2>&1; then ok "LazyVim listo: abre nvim"
+    else warn "No terminó de descargar; abre nvim y espera a que acabe."; fi
+  fi
+fi
+
+# ═════════════════════════ 7. Aplicar ═════════════════════════
 titulo "Aplicando"
 if en_hyprland; then
   hyprctl reload >/dev/null 2>&1 || true
@@ -512,7 +580,8 @@ cat <<'RESUMEN'
   Super + L              bloquear       ·   Super + Shift + L  personalizar el bloqueo
   Super + Shift + V      portapapeles   ·   Super + Shift + F  foto de perfil
   Super + Shift + A      animaciones    ·   Super + Shift + E  efecto 3D de los workspaces
-  Super + B              reiniciar la barra
+  Super + B              reiniciar la barra  ·  Super + Shift + B  estilo de la barra
+  nvim                   Neovim con tu paleta  ·  Espacio + z  atajos del rice
   Impr Pant              captura de área ·  Shift/Super + Impr Pant  pantalla/ventana
 
   Actualizar el rice:    ./install.sh --actualizar
