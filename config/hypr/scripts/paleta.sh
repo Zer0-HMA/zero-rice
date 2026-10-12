@@ -16,6 +16,7 @@
 
 CAMBIAR_FONDO=1        # 1 = generar un fondo que combine con la paleta · 0 = no tocar mi fondo
 TEMA_KITTY=1           # 1 = la terminal también cambia de color         · 0 = no tocar kitty
+TEMA_GTK=1             # 1 = apps GTK (Thunar…) con tu paleta y modo claro/oscuro · 0 = no tocarlas
 ESTILO_FONDO=lineas    # lineas · malla · aurora · rejilla · circulos · aleatorio
 MODO_IMAGENES=oscuro   # oscuro · claro: tema de las paletas sacadas de tus imágenes
 
@@ -25,8 +26,11 @@ CFG="$HOME/.config"
 DIR="$CFG/rice-paletas"
 LISTA="$DIR/paletas.txt"
 ACTUAL="$DIR/actual"
+# la 0.2.0 guardaba la paleta actual en ~/.local/state/zero-rice/paleta: se regresa a su lugar una sola vez
+ACTUAL_020="${XDG_STATE_HOME:-$HOME/.local/state}/zero-rice/paleta"
 LIB="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/lib"
 mkdir -p "$DIR"
+[[ -f "$ACTUAL_020" && ! -f "$ACTUAL" ]] && mv -f "$ACTUAL_020" "$ACTUAL"
 
 # shellcheck source=/dev/null
 [[ -f "$DIR/ajustes.conf" ]] && source "$DIR/ajustes.conf"

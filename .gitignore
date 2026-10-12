@@ -9,6 +9,7 @@ config/ags/colores.css
 config/hypr/colores.lua
 config/hypr/animaciones.lua
 config/hypr/hyprlock.conf
+config/hypr/hyprlock-colores.conf
 config/swaync/style.css
 config/rofi/themes/colores.rasi
 config/rofi/themes/zero.rasi

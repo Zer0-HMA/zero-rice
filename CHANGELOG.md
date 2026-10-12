@@ -2,13 +2,33 @@
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [SemVer](https://semver.org/lang/es/).
 
-## [Sin publicar]
+## [0.3.0] — 2026-10-11
 
 ### Agregado
+- **48 paletas** y **paleta propia por cada imagen** (pestañas Paletas / Imágenes en `Super + Shift + P`, `Super + Alt + I`), selector de imágenes de cualquier carpeta (`Super + Shift + I`), siguiente/aleatoria (`Super + Ctrl/Alt + P`).
+- **Motor de plantillas** (`~/.config/rice-plantillas/*.tpl`): tematizar una app nueva sin tocar código.
+- **5 estilos de fondo generado**: líneas, malla, aurora, rejilla y círculos.
+- **Bienvenida en la terminal** con fastfetch y tu paleta (`bienvenida info | saludo | off`).
 - **zero-lock**: pantalla de bloqueo personalizable (hyprlock) con 5 estilos (`tarjetas`, `minimal`, `centrado`, `terminal`, `panel`).
   Menú en rofi (`Super + Shift + L`): estilo, fondo (automático, captura, explorador de archivos con vista previa, galería o color), desenfoque, brillo, tamaño, reloj 12/24 h, colores, foto y elementos.
   Los textos se recortan para no salirse de los recuadros y todo se escala a la resolución de tu pantalla.
   Usa la paleta activa mediante la plantilla `hyprlock-colores.conf.tpl`. `Super + L` bloquea y `hypridle` usa el mismo comando.
+- `zero-lock diagnostico`: revisa hyprlock, hypridle, los atajos registrados en Hyprland, procesos atorados y el log del bloqueo.
+- Config de emergencia: si la pantalla bonita no se puede generar o hyprlock falla con ella, se bloquea igual con una mínima.
+- Plantillas `gtk3-colores.css.tpl` y `gtk4-colores.css.tpl`: las apps GTK vuelven a seguir tu paleta (con `TEMA_GTK=0` se desactiva).
+- Captura del escritorio en el README.
+
+### Corregido
+- **`Super + L` no bloqueaba**: `zero-lock` le preguntaba a `bluetoothctl` por el estado del bluetooth, y con el servicio apagado `bluetoothctl` se queda esperando para siempre; hyprlock nunca llegaba a abrirse (y el botón de la barra y hypridle se trababan igual). Ahora todo lo que se consulta tiene tiempo límite, el bluetooth solo se revisa si hay adaptador y servicio, y la portada de la música ya no se descarga antes de bloquear.
+- Un solo bloqueo a la vez: varios `Super + L` seguidos ya no dejan procesos colgados.
+- `zero-lock` ya no usa `general:grace` (hyprlock nuevo lo quitó); la vista previa usa `--grace` si tu hyprlock lo tiene.
+- `~/.local/bin/zero-lock` ahora es un enlace al script del rice (antes era una copia que se quedaba vieja al actualizar).
+- `zero-lock estado` mostraba los valores corridos (faltaba el tamaño) y el estilo minimal no mostraba el nombre del equipo en Arch (sin el comando `hostname`).
+- **Se recuperó lo que la versión de "paleta por cada imagen" borró sin querer de la 0.2.0**: arranque de hypridle, polkit y cliphist; atajos `Super + Shift + V/F/A/E` y workspaces 3D; menú de animaciones; blur del OSD; instalación de `ws3d.tsx`, `efectos3d.ts`, `perfil.sh`, `animaciones.sh`, `ws3d.sh`, `portapapeles.sh` y `temp.sh` (sin ellos la barra no arrancaba en una instalación nueva); paquetes `hyprlock hypridle hyprpolkitagent xdg-desktop-portal-hyprland cliphist kernel-modules-hook`; `hypridle.conf`; `--version`, `--enlazar` y `--copiar`; desinstalación completa.
+- `install.sh` había perdido el permiso de ejecución (`./install.sh` daba "Permiso denegado").
+- El instalador buscaba tu ciudad en la ruta vieja y la volvía a detectar en cada actualización.
+- Si venías de la 0.2.0, tu paleta actual (guardada en `~/.local/state/zero-rice/paleta`) se vuelve a encontrar.
+- La revisión automática ahora también revisa `lib/`, los permisos de ejecución y que zero-lock genere sus 5 estilos sin colgarse.
 
 ## [0.2.0] — 2026-10-09
 

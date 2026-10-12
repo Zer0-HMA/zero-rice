@@ -13,21 +13,23 @@
 #   zero-lock fondo <ruta|auto|captura|#rrggbb>
 #   zero-lock set <clave> <valor>   ajuste directo (ver ~/.config/zero-lock/config)
 #   zero-lock estado            muestra tu configuración actual
+#   zero-lock diagnostico       revisa por qué no bloquea (hyprlock, atajos, hypridle, log)
 #   zero-lock desinstalar       quita todo (no borra paquetes)
 #
 # Colores: sigue la paleta de zero-rice (Super+Shift+P) o usa una propia.
 
 shopt -u patsub_replacement 2>/dev/null
-VERSION="1.1.0"
+VERSION="1.2.0"
 CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
 DIR="$CFG/zero-lock"
 CONF="$DIR/config"
 CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/zero-lock"
 GEN="$CACHE/hyprlock.conf"
 RICE_COL="$CFG/hypr/hyprlock-colores.conf"
+SEGURO="$CACHE/seguro.conf"
+LOG="$CACHE/zero-lock.log"
 SRC=$(readlink -f "${BASH_SOURCE[0]}")
-SELF=$SRC
-[[ -x $HOME/.local/bin/zero-lock ]] && SELF="$HOME/.local/bin/zero-lock"   # los labels de hyprlock usan la copia instalada
+SELF=$SRC   # los labels de hyprlock llaman SIEMPRE a este mismo archivo (~/.local/bin/zero-lock es solo un enlace)
 mkdir -p "$DIR" "$CACHE"
 USER=${USER:-$(id -un)}
 # los iconos necesitan una locale UTF-8 (hyprlock a veces corre sin LANG)
@@ -91,6 +93,12 @@ guardar() {   # clave valor
   { [[ -n $t ]] && printf '%s\n' "$t"; printf '%s=%q\n' "$1" "$2"; } > "$CONF.tmp" && mv "$CONF.tmp" "$CONF"
 }
 notificar() { command -v notify-send >/dev/null 2>&1 && notify-send -a "Bloqueo" "$@"; return 0; }
+# Nada de lo que se consulta puede trabar el bloqueo: todo con tiempo límite.
+# (bluetoothctl, por ejemplo, se queda esperando PARA SIEMPRE si el servicio bluetooth está apagado)
+t() { local s=${T:-2}; if command -v timeout >/dev/null 2>&1; then timeout -k 1 "$s" "$@"; else "$@"; fi; }
+log() { printf '%s  %s\n' "$(date '+%F %T')" "$*" >> "$LOG" 2>/dev/null; return 0; }
+recortar_log() { [[ -f $LOG ]] && (( $(wc -l < "$LOG") > 400 )) && { tail -n 200 "$LOG" > "$LOG.tmp" && mv -f "$LOG.tmp" "$LOG"; }; return 0; }
+HOST=${HOSTNAME:-$(cat /etc/hostname 2>/dev/null)}; HOST=${HOST:-$(uname -n)}   # Arch no trae el comando hostname
 esc() { local s=$1; s=${s//&/&amp;}; s=${s//</&lt;}; s=${s//>/&gt;}; printf '%s' "$s"; }
 
 # ───────────────────────────── colores ─────────────────────────────
@@ -178,31 +186,35 @@ cmd_estado() {   # [N]
     o+=" $(<"$b/capacity")%"; break
   done
   [[ -n $o ]] || o="$I_BAT AC"
-  w=$(nmcli -t -f ACTIVE,SSID dev wifi 2>/dev/null | awk -F: '$1=="yes"{print $2; exit}')
+  w=$(T=2 t nmcli -t -f ACTIVE,SSID dev wifi 2>/dev/null | awk -F: '$1=="yes"{print $2; exit}')
   local sw=$(( N - 34 )); (( sw < 6 )) && sw=6; (( sw > 18 )) && sw=18
   if [[ -n $w ]]; then o+="   $I_WIFI $(esc "$(corto "$w" "$sw")")"
-  elif nmcli -t -f TYPE,STATE dev 2>/dev/null | grep -q '^ethernet:connected'; then o+="   $I_ETH Cable"
+  elif T=2 t nmcli -t -f TYPE,STATE dev 2>/dev/null | grep -q '^ethernet:connected'; then o+="   $I_ETH Cable"
   else o+="   $I_NOWIFI Sin red"; fi
-  if command -v bluetoothctl >/dev/null 2>&1 && bluetoothctl show 2>/dev/null | grep -q 'Powered: yes'; then o+="   $I_BT Bluetooth"
-  else o+="   $I_NOBT Bluetooth"; fi
+  # Bluetooth: solo si hay adaptador. Sin el servicio corriendo no se le pregunta nada (bluetoothctl se colgaría).
+  if compgen -G '/sys/class/bluetooth/hci*' >/dev/null; then
+    if command -v bluetoothctl >/dev/null 2>&1 && systemctl is-active --quiet bluetooth 2>/dev/null \
+       && T=1 t bluetoothctl show 2>/dev/null | grep -q 'Powered: yes'; then o+="   $I_BT Bluetooth"
+    else o+="   $I_NOBT Bluetooth"; fi
+  fi
   printf '%s' "$o"
 }
 cmd_musica() {   # titulo|artista|linea [N]
-  local N=${2:-30} t a
+  local N=${2:-30} ti a
   command -v playerctl >/dev/null 2>&1 || { [[ $1 == titulo ]] && echo "Sin música"; return 0; }
-  t=$(playerctl metadata title 2>/dev/null); a=$(playerctl metadata artist 2>/dev/null)
+  ti=$(T=1 t playerctl metadata title 2>/dev/null); a=$(T=1 t playerctl metadata artist 2>/dev/null)
   case "$1" in
-    titulo)  esc "$(corto "${t:-Nada sonando}" "$N")" ;;
+    titulo)  esc "$(corto "${ti:-Nada sonando}" "$N")" ;;
     artista) esc "$(corto "$a" "$N")" ;;
-    linea)   [[ -n $t ]] && esc "$I_MUSIC  $(corto "$t${a:+  —  $a}" $((N - 3)))" ;;
+    linea)   [[ -n $ti ]] && esc "$I_MUSIC  $(corto "$ti${a:+  —  $a}" $((N - 3)))" ;;
   esac
 }
 cmd_portada() {
   local u tmp="$CACHE/portada.tmp" sig ext
-  command -v playerctl >/dev/null 2>&1 && u=$(playerctl metadata mpris:artUrl 2>/dev/null)
+  command -v playerctl >/dev/null 2>&1 && u=$(T=1 t playerctl metadata mpris:artUrl 2>/dev/null)
   rm -f "$tmp"
   case "$u" in
-    file://*) cp -f "${u#file://}" "$tmp" 2>/dev/null ;;
+    file://*) u=${u#file://}; u=${u//%20/ }; cp -f "$u" "$tmp" 2>/dev/null ;;
     http*)    curl -fsS --max-time 3 -o "$tmp" "$u" 2>/dev/null ;;
   esac
   if [[ -s $tmp ]]; then
@@ -213,8 +225,13 @@ cmd_portada() {
   fi
   [[ -f $CACHE/portada.jpg ]] && echo "$CACHE/portada.jpg" || echo "$CACHE/portada.png"
 }
+portada_rapida() {   # para generar la config: nunca espera a internet; la portada nueva llega sola (reload_cmd)
+  ( setsid -f bash "$SRC" _portada >/dev/null 2>&1 & ) 2>/dev/null
+  if [[ -f $CACHE/portada.jpg ]]; then echo "$CACHE/portada.jpg"
+  else [[ -f $CACHE/portada.png ]] || printf '%s' "$PIXEL" | base64 -d > "$CACHE/portada.png"; echo "$CACHE/portada.png"; fi
+}
 cmd_notis() {
-  local n; n=$(swaync-client -c 2>/dev/null)
+  local n; n=$(T=1 t swaync-client -c 2>/dev/null)
   if [[ $n =~ ^[0-9]+$ && $n -gt 0 ]]; then printf '%s   Tienes %s sin leer' "$I_BELL" "$n"
   else printf '%s   Estás al día' "$I_NOBELL"; fi
 }
@@ -233,7 +250,7 @@ cmd_terminal() {   # [N]  bloque multilínea con colores (markup) para el estilo
   cargar
   local N=${1:-46} a b d fmt host c w m k
   a=$(col_hex ac1); b=$(col_hex ac2); d=$(col_hex dim)
-  host=$(hostname 2>/dev/null || cat /etc/hostname 2>/dev/null)
+  host=$HOST
   fmt='%H:%M:%S'; [[ $reloj == 12 ]] && fmt='%I:%M:%S %p'
   c() { printf '<span foreground="#%s">%s</span>' "$1" "$2"; }
   printf '%s%s%s  %s\n' "$(c "$a" "<b>$(esc "$(corto "$USER" 14)")</b>")" "$(c "$d" "@")" "$(c "$b" "<b>$(esc "$(corto "$host" 14)")</b>")" "$(c "$d" "· bloqueado")"
@@ -254,7 +271,7 @@ cmd_terminal() {   # [N]  bloque multilínea con colores (markup) para el estilo
 prep() {
   local s Wr=1920 Hr=1080 sw sh
   if command -v hyprctl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
-    s=$(hyprctl monitors -j 2>/dev/null | jq -r '(map(select(.focused))[0] // .[0]) | "\((.width/.scale)|floor) \((.height/.scale)|floor)"' 2>/dev/null)
+    s=$(T=2 t hyprctl monitors -j 2>/dev/null | jq -r '(map(select(.focused))[0] // .[0]) | "\((.width/.scale)|floor) \((.height/.scale)|floor)"' 2>/dev/null)
     [[ $s =~ ^[0-9]+\ [0-9]+$ ]] && read -r Wr Hr <<<"$s"
   fi
   [[ ${ZL_TAM:-} =~ ^[0-9]+\ [0-9]+$ ]] && read -r Wr Hr <<<"$ZL_TAM"   # para probar otras pantallas: ZL_TAM="1366 768"
@@ -266,7 +283,7 @@ prep() {
   USUARIO=$(id -un)
   case "$foto" in ""|rice) FOTO="$HOME/.face" ;; none) FOTO="" ;; *) FOTO="$foto" ;; esac
   [[ -n $FOTO && ! -f $FOTO ]] && FOTO=""
-  PORTADA=$(cmd_portada)
+  PORTADA=$(portada_rapida)
   WH='$zl_w'; WD='$zl_wd'; ACB=$(acento_visible)
   SOMBRA=$'    shadow_passes = 2\n    shadow_size = 3\n    shadow_color = rgba(000000b0)\n'
 }
@@ -297,14 +314,19 @@ inp() {   # ancho alto x y halign valign texto radio contorno color-interior
     "$(sc "$1")" "$(sc "$2")" "$(sc "$3")" "$(sc "$4")" "$5" "$6" "$(sc "$9")" "${10:-\$zl_sf}" "$(rr "$8")" "$dim" "$7"
 }
 
+grace_por_cli() {   # hyprlock nuevo: --grace N (general:grace ya no existe) · viejo: grace = N en la config
+  [[ -n ${_GRACE_CLI:-} ]] || { hyprlock --help 2>&1 | grep -q -- '--grace' && _GRACE_CLI=1 || _GRACE_CLI=0; }
+  [[ $_GRACE_CLI == 1 ]]
+}
 emitir_cabecera() {
+  local g=""
+  [[ ${1:-0} != 0 ]] && ! grace_por_cli && g="    grace = $1"$'\n'
   cat <<EOF
 # Generado por zero-lock $VERSION — no lo edites a mano (usa: zero-lock)
 general {
     hide_cursor = true
     ignore_empty_input = true
-    grace = ${1:-0}
-}
+${g}}
 
 animations {
     enabled = true
@@ -320,20 +342,14 @@ ruta_fondo() {
   local a="" w
   case $fondo in
     auto)
-      for w in awww swww; do
-        command -v "$w" >/dev/null 2>&1 || continue
-        a=$("$w" query 2>/dev/null | sed -n 's/.*image: //p' | head -1); [[ -f $a ]] && break; a=""
-      done
-      [[ -f $a ]] || { [[ -f $CFG/wallpapers/.actual ]] && a=$(<"$CFG/wallpapers/.actual"); }
-      if [[ -f $a ]]; then
-        case "${a,,}" in
-          *.png|*.jpg|*.jpeg) echo "$a" ;;
-          *) if   command -v magick  >/dev/null 2>&1 && magick  "${a}[0]" "$CACHE/fondo.png" 2>/dev/null; then echo "$CACHE/fondo.png"
-             elif command -v convert >/dev/null 2>&1 && convert "${a}[0]" "$CACHE/fondo.png" 2>/dev/null; then echo "$CACHE/fondo.png"
-             elif [[ ${a,,} == *.webp ]]; then echo "$a"
-             else echo screenshot; fi ;;
-        esac
-      else echo screenshot; fi ;;
+      [[ -f $CFG/wallpapers/.actual ]] && a=$(<"$CFG/wallpapers/.actual")
+      if [[ ! -f $a ]]; then
+        for w in awww swww; do
+          command -v "$w" >/dev/null 2>&1 || continue
+          a=$("$w" query 2>/dev/null | head -1 | sed -n 's/.*image: //p'); [[ -f $a ]] && break
+        done
+      fi
+      [[ -f $a ]] && echo "$a" || echo screenshot ;;
     captura) echo screenshot ;;
     solido:*) echo "color:${fondo#solido:}" ;;
     *) [[ -f $fondo ]] && echo "$fondo" || echo screenshot ;;
@@ -416,7 +432,7 @@ estilo_minimal() {
   fc-list 2>/dev/null | grep -qi 'dotgothic16' && DOT="DotGothic16"
   lbl "cmd[update:1000] date +\"$fHM\"" 96 "$DOT" "$WH" 60 -40 left top "$SOMBRA"
   lbl 'cmd[update:60000] date +"%a, %d %b" | tr a-z A-Z' 18 "$DOT" "$WH" 64 -200 left top "$SOMBRA"
-  lbl "$I_ARCH  $(esc "$USUARIO")@$(esc "$(corto "$(hostname 2>/dev/null)" 18)")" 13 "$F" "$WD" 66 -234 left top "$SOMBRA"
+  lbl "$I_ARCH  $(esc "$USUARIO")@$(esc "$(corto "$HOST" 18)")" 13 "$F" "$WD" 66 -234 left top "$SOMBRA"
   el_clima 40 14 "$F" "$WD" 66 -262 left top "$SOMBRA"
   inp 300 46 0 40 center bottom "<span font_size=\"${ps}pt\">PRESS ANY KEY TO UNLOCK</span>" 23 0 '$zl_bg'
   el_musica_linea 56 12 "$F" "$WD" 0 105 center bottom "$SOMBRA"
@@ -652,18 +668,112 @@ menu() {
 }
 
 # ───────────────────────────── bloquear / vista previa ─────────────────────────────
-tiene_hyprlock() { command -v hyprlock >/dev/null 2>&1 || { notificar "zero-lock" "Falta hyprlock: sudo pacman -S hyprlock"; echo "Falta hyprlock (sudo pacman -S hyprlock)" >&2; return 1; }; }
+tiene_hyprlock() { command -v hyprlock >/dev/null 2>&1 || { notificar -u critical "zero-lock" "Falta hyprlock: sudo pacman -S hyprlock"; echo "Falta hyprlock (sudo pacman -S hyprlock)" >&2; log "ERROR: hyprlock no está instalado"; return 1; }; }
+hyprlock_corriendo() { pgrep -x hyprlock >/dev/null 2>&1; }
+
+# Config mínima que no depende de nada (ni fuentes, ni scripts, ni paleta): si la bonita falla, se usa esta.
+emitir_seguro() {
+  cat > "$SEGURO" <<'EOF'
+# zero-lock — config de emergencia (se usa solo si la normal no se pudo generar o hyprlock falló con ella)
+general {
+    hide_cursor = false
+}
+background {
+    monitor =
+    color = rgba(111118ff)
+}
+label {
+    monitor =
+    text = $TIME
+    font_size = 72
+    color = rgba(f6f6fbff)
+    position = 0, 120
+    halign = center
+    valign = center
+}
+input-field {
+    monitor =
+    size = 320, 52
+    outline_thickness = 2
+    outer_color = rgba(7aa2f7ff)
+    inner_color = rgba(1a1b26ff)
+    font_color = rgba(c0caf5ff)
+    fade_on_empty = false
+    placeholder_text = Contraseña
+    fail_text = $FAIL ($ATTEMPTS)
+    position = 0, -20
+    halign = center
+    valign = center
+}
+EOF
+}
+
+# Genera la config en un proceso aparte y con tiempo límite: si algo se traba, se bloquea igual (con la de emergencia).
+preparar_config() {   # grace → imprime la ruta de la config a usar
+  local ini fin
+  ini=$(date +%s%N)
+  if T=5 t bash "$SRC" _generar "${1:-0}" 2>>"$LOG" && [[ -s $GEN ]]; then
+    fin=$(date +%s%N); log "config lista en $(( (fin - ini) / 1000000 )) ms (estilo: $(cargar; printf '%s' "$estilo"))"
+    printf '%s' "$GEN"
+  else
+    log "AVISO: no se pudo generar la config a tiempo → uso la de emergencia"
+    emitir_seguro; printf '%s' "$SEGURO"
+  fi
+}
+
 cmd_lock() {
-  pidof hyprlock >/dev/null 2>&1 && return 0
+  hyprlock_corriendo && return 0
   tiene_hyprlock || return 1
-  generar 0
-  hyprlock -c "$GEN" || exec hyprlock   # si algo falla con mi config, nunca te quedas sin bloqueo
+  recortar_log
+  # un solo bloqueo a la vez (Super + L varias veces, hypridle y el botón de la barra al mismo tiempo…)
+  exec 8>"$CACHE/.bloqueando"
+  if command -v flock >/dev/null 2>&1 && ! flock -n 8; then log "ya se estaba bloqueando; ignoro este intento"; return 0; fi
+  local cfg rc
+  cfg=$(preparar_config 0)
+  log "bloqueando con $cfg"
+  hyprlock -c "$cfg" 8>&- 2>>"$LOG"; rc=$?
+  if (( rc != 0 )) && [[ $cfg != "$SEGURO" ]] && ! hyprlock_corriendo; then
+    # hyprlock no arrancó o se cayó con la config bonita: nunca te quedas sin bloqueo
+    log "hyprlock salió con código $rc → reintento con la config de emergencia"
+    emitir_seguro; hyprlock -c "$SEGURO" 8>&- 2>>"$LOG"; rc=$?
+  fi
+  log "desbloqueado (código $rc)"
+  return 0
 }
 cmd_preview_hijo() {
-  pidof hyprlock >/dev/null 2>&1 && return 0
+  hyprlock_corriendo && return 0
   tiene_hyprlock || return 1
-  generar 6; notificar "Vista previa" "Mueve el mouse para volver (6 s)"
-  hyprlock -c "$GEN"
+  local cfg extra=()
+  grace_por_cli && extra=(--grace 6)
+  cfg=$(preparar_config 6); notificar "Vista previa" "Mueve el mouse para volver (6 s)"
+  hyprlock -c "$cfg" "${extra[@]}" 2>>"$LOG"
+}
+
+# ───────────────────────────── diagnóstico ─────────────────────────────
+diagnostico() {
+  local ok=$'\e[1;32m✔\e[0m' mal=$'\e[1;31m✘\e[0m' av=$'\e[1;33m!\e[0m' b ini fin p
+  echo "zero-lock $VERSION  ·  $SRC"
+  if command -v hyprlock >/dev/null 2>&1; then echo "$ok hyprlock: $(hyprlock --version 2>/dev/null | head -1)"
+  else echo "$mal hyprlock NO está instalado  →  sudo pacman -S hyprlock"; fi
+  if command -v hypridle >/dev/null 2>&1; then
+    if pgrep -x hypridle >/dev/null; then echo "$ok hypridle corriendo (bloqueo automático)"
+    else echo "$av hypridle instalado pero NO corre  →  hypridle & disown   (el rice lo arranca al iniciar sesión)"; fi
+  else echo "$av hypridle no está instalado (sin bloqueo automático)  →  sudo pacman -S hypridle"; fi
+  if [[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} ]] && command -v jq >/dev/null 2>&1; then
+    b=$(T=2 t hyprctl binds -j 2>/dev/null | jq -r '.[] | select((.arg // "") | test("zero-lock|hyprlock|lock-session")) | "\(.modmask) \(.key) → \(.arg)"' 2>/dev/null)
+    if [[ -n $b ]]; then echo "$ok atajos registrados en Hyprland:"; sed 's/^/     /' <<<"$b"
+    else echo "$mal Hyprland NO tiene ningún atajo de bloqueo  →  corre ./install.sh --actualizar y luego hyprctl reload"; fi
+  fi
+  if compgen -G '/sys/class/bluetooth/hci*' >/dev/null && ! systemctl is-active --quiet bluetooth 2>/dev/null; then
+    echo "$ok bluetooth apagado: se detecta sin colgarse (antes de la 1.2.0 esto trababa el bloqueo)"
+  fi
+  p=$(pgrep -fa 'zero-lock(\.sh)? lock' | grep -v "^$$ " || true)
+  [[ -n $p ]] && { echo "$av procesos de bloqueo atorados de antes (se pueden matar con: pkill -f 'zero-lock.sh lock'):"; sed 's/^/     /' <<<"$p"; }
+  ini=$(date +%s%N)
+  if T=5 t bash "$SRC" _generar 0 2>/dev/null && [[ -s $GEN ]]; then fin=$(date +%s%N); echo "$ok la config se genera en $(( (fin - ini) / 1000000 )) ms → $GEN"
+  else echo "$mal la config NO se genera (se usaría la de emergencia). Revisa: bash -x $SRC gen"; fi
+  [[ -f $LOG ]] && { echo "── últimas líneas de $LOG"; tail -n 8 "$LOG"; }
+  return 0
 }
 
 # ───────────────────────────── instalador ─────────────────────────────
@@ -698,8 +808,9 @@ instalar() {
   fc-list 2>/dev/null | grep -qi 'dotgothic16' || say "Opcional (estilo minimal): yay -S ttf-dotgothic16"
 
   mkdir -p "$HOME/.local/bin"
-  [[ $SRC != "$dest" ]] && install -m755 "$SRC" "$dest"
-  say "Comando instalado → $dest"
+  # enlace (no copia): así nunca queda una versión vieja suelta en ~/.local/bin
+  [[ $SRC != "$dest" ]] && ln -sfn "$SRC" "$dest"
+  say "Comando instalado → $dest → $SRC"
   case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) say "Agrega ~/.local/bin a tu PATH para usar 'zero-lock' desde la terminal" ;; esac
   [[ -f $CONF ]] || guardar estilo tarjetas
 
@@ -711,13 +822,15 @@ instalar() {
 
   if [[ -f $HI ]] && grep -q '^[[:space:]]*lock_cmd' "$HI" && ! grep -q zero-lock "$HI"; then
     if confirmar "¿Que el bloqueo automático (hypridle) use zero-lock?"; then
-      cp "$HI" "$HI.bak.$(date +%s)"; sed -i "s|^\([[:space:]]*\)lock_cmd.*|\1lock_cmd = pidof hyprlock \|\| $dest lock|" "$HI"
+      cp "$HI" "$HI.bak.$(date +%s)"; sed -i "s|^\([[:space:]]*\)lock_cmd.*|\1lock_cmd = pidof hyprlock \|\| $SRC lock|" "$HI"
       say "hypridle actualizado (respaldo guardado)"
     fi
   fi
 
   if [[ -f $LUA ]]; then
-    if ! grep -qs 'zero-lock' "$MIO" && confirmar "¿Agregar atajos Super+L (bloquear) y Super+Shift+L (menú) en mio.lua?"; then
+    if grep -qs 'zero-lock' "$CFG/hypr/rice.lua"; then
+      say "Los atajos Super+L / Super+Shift+L ya vienen en rice.lua"
+    elif ! grep -qs 'zero-lock' "$MIO" && confirmar "¿Agregar atajos Super+L (bloquear) y Super+Shift+L (menú) en mio.lua?"; then
       cat >> "$MIO" <<EOF
 
 -- zero-lock begin
@@ -751,7 +864,7 @@ desinstalar() {
 estado() {
   cargar
   printf 'estilo=%s\nfondo=%s\ndesenfoque=%s\nbrillo=%s\nescala=%s\nreloj=%s h\ncolores=%s\nfoto=%s\nelementos=%s\n' \
-    "$estilo" "$(fondo_val)" "$blur" "$brillo" "$reloj" "${ESQ_NOM[$esquema]}" "${foto:-rice}" "$(elementos_val)"
+    "$estilo" "$(fondo_val)" "$blur" "$brillo" "$escala" "$reloj" "${ESQ_NOM[$esquema]}" "${foto:-rice}" "$(elementos_val)"
 }
 main() {
   local c=${1:-menu} i p
@@ -772,6 +885,8 @@ main() {
     set)            [[ -n ${2:-} && -n ${3:-} ]] || { echo "Uso: zero-lock set <clave> <valor>" >&2; exit 1; }; guardar "$2" "$3" ;;
     estado)         estado ;;
     gen)            generar "${2:-0}"; cat "$GEN" ;;
+    _generar)       generar "${2:-0}" ;;
+    diagnostico|doctor) diagnostico ;;
     instalar)       shift; instalar "$@" ;;
     desinstalar)    desinstalar ;;
     _clima)         cmd_clima "${2:-44}" ;; _estado)  cmd_estado "${2:-60}" ;; _musica) cmd_musica "${2:-titulo}" "${3:-30}" ;;

@@ -11,10 +11,25 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Sintaxis de bash
-        run: for f in install.sh config/hypr/scripts/*.sh; do bash -n "$f"; done
+        run: for f in install.sh config/hypr/scripts/*.sh config/hypr/scripts/lib/*.sh; do bash -n "$f"; done
 
       - name: ShellCheck
-        run: shellcheck -S warning install.sh config/hypr/scripts/*.sh
+        run: shellcheck -S warning install.sh config/hypr/scripts/*.sh config/hypr/scripts/lib/*.sh
+
+      - name: Scripts ejecutables
+        run: |
+          for f in install.sh config/hypr/scripts/*.sh; do
+            [[ -x "$f" ]] || { echo "Falta el permiso de ejecución: $f  (git update-index --chmod=+x $f)"; exit 1; }
+          done
+
+      - name: zero-lock genera sus 5 estilos sin colgarse
+        run: |
+          export HOME=$(mktemp -d) ZL_TTY=1
+          for e in tarjetas minimal centrado terminal panel; do
+            bash config/hypr/scripts/zero-lock.sh estilo "$e" >/dev/null
+            timeout 15 bash config/hypr/scripts/zero-lock.sh gen > "/tmp/zl-$e.conf" || { echo "zero-lock se colgó o falló con el estilo $e"; exit 1; }
+            grep -q '^input-field {' "/tmp/zl-$e.conf" || { echo "Estilo $e sin campo de contraseña"; exit 1; }
+          done
 
       - name: Sintaxis de Lua
         run: |
