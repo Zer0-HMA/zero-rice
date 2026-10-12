@@ -13,6 +13,7 @@ Configuración completa para **Arch Linux + Hyprland** (config en Lua): barra co
 - **Paleta por cada imagen:** cada fondo tuyo guarda su propia paleta (pestaña "Imágenes" del menú); elegirla aplica sus colores y pone esa imagen.
 - **5 estilos de fondo generado:** líneas, malla, aurora, rejilla synthwave y círculos, todos con los colores de tu paleta.
 - **Motor de plantillas:** tematizar una app nueva es agregar un archivo `.tpl`, sin tocar código.
+- **Bienvenida en la terminal:** logo, datos del sistema y tu paleta (o un saludo con clima) al abrir la terminal, con los colores de la paleta.
 - **Clima:** detecta tu ciudad por internet, o la eliges de una lista que se filtra mientras escribes.
 - **Menú de red:** Wi-Fi con barras de señal, redes ocultas, cable y configuración avanzada.
 - **Capturas de pantalla:** área, pantalla o ventana; notificación con vista previa y botones Abrir / Carpeta / Editar / Borrar.
@@ -129,6 +130,25 @@ theme[hi_fg]="{{acento}}"
 ```
 
 Al cambiar de paleta se rellenan todas las plantillas. Variables disponibles: `fondo fondo2 tenue texto acento acento2 sobre inactivo rojo verde amarillo azul magenta cyan` y `ansi0` … `ansi15`; formas: `{{acento.hex}}`, `{{acento.rgb}}`, `{{acento.a30}}` (30 % de opacidad), `{{acento.rgba30}}` (CSS) y `{{acento.hypr}}`. La lista completa está en `config/hypr/scripts/lib/plantillas.sh`.
+
+## Terminal
+
+Al abrir una terminal se muestra una bienvenida con los colores de tu paleta (cambia sola cuando cambias de paleta):
+
+```bash
+bienvenida info      # logo + datos del sistema + tu paleta + los colores de la terminal (fastfetch)
+bienvenida saludo    # una línea: saludo, clima, tiempo encendida y RAM
+bienvenida off       # nada al abrir
+ff                   # fastfetch completo
+```
+
+Solo sale en la ventana nueva: no en subshells, ni en tmux, nvim o ventanas muy chicas. El instalador agrega una línea al **inicio** de `~/.zshrc`, antes del bloque de "instant prompt" de Powerlevel10k, que es donde debe ir:
+
+```zsh
+source "$HOME/.config/rice-terminal/bienvenida.zsh"
+```
+
+`fastfetch.jsonc` y `colores.zsh` (en `~/.config/rice-terminal/`) los genera `paleta.sh` desde las plantillas; en `colores.zsh` tienes los colores de tu paleta para tus propios scripts de zsh (`$RT_ACENTO`, `$RT_ROJO`...).
 
 ## Clima
 

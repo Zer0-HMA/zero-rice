@@ -50,7 +50,9 @@ definir_variables() {
   local nombres=(ROJO VERDE AMAR AZUL MAG CIAN)
   if ((claro)); then
     V[term_fondo]=$TEX; V[term_texto]=$F
+    V[term_acento]=$(mezcla "$A" "#ffffff" 35); V[term_acento2]=$(mezcla "$A2" "#ffffff" 35)
     V[ansi0]=$(mezcla "$TEX" "#ffffff" 15);  V[ansi8]=$(mezcla "$TEX" "#ffffff" 40)
+    V[term_tenue]=${V[ansi8]}
     V[ansi7]=$(mezcla "$F" "$TEX" 15);       V[ansi15]=$F
     for n in 0 1 2 3 4 5; do
       c=${!nombres[n]}
@@ -59,6 +61,7 @@ definir_variables() {
     done
   else
     V[term_fondo]=$F; V[term_texto]=$TEX
+    V[term_acento]=$A; V[term_acento2]=$A2; V[term_tenue]=$TEN
     V[ansi0]=$F2;  V[ansi8]=$TEN
     V[ansi7]=$(mezcla "$TEX" "$F" 25);       V[ansi15]=$TEX
     for n in 0 1 2 3 4 5; do

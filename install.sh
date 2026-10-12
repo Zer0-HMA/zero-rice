@@ -91,7 +91,7 @@ desinstalar() {
     "$CFG/hypr/rice.lua" "$S/wall.sh" "$S/paleta.sh" "$S/red.sh" "$S/barra.sh" "$S/captura.sh"
     "$S/lanzador.sh" "$S/panel.sh" "$S/clima.sh" "$S/elegir-fondo.sh"
     "$CFG/ags" "$CFG/rofi" "$CFG/swaync" "$CFG/kitty/paleta.conf"
-    "$CFG/rice-paletas" "$CFG/rice-plantillas" "$CFG/rice-clima" "$CFG/rice-lanzador"
+    "$CFG/rice-paletas" "$CFG/rice-plantillas" "$CFG/rice-terminal" "$CFG/rice-clima" "$CFG/rice-lanzador"
     "$CFG/hypr/colores.lua" "$S/lib"
   )
   for c in "${cosas[@]}"; do
@@ -99,6 +99,7 @@ desinstalar() {
     respaldar "$c"; rm -rf "$c"
   done
   [[ -f "$CFG/kitty/kitty.conf" ]] && sed -i '/^# Colores de paleta.sh$/d; /^include paleta.conf$/d' "$CFG/kitty/kitty.conf"
+  [[ -f "$HOME/.zshrc" ]] && sed -i '/rice-terminal\/bienvenida.zsh/d' "$HOME/.zshrc"
   en_hyprland && hyprctl reload >/dev/null 2>&1 || true
   ok "Rice quitado. Todo quedó respaldado en: $RESPALDO"
   info "Tus fondos en ~/.config/wallpapers no se tocaron."
@@ -138,7 +139,7 @@ else
     grim slurp wl-clipboard libnotify satty hyprpicker sound-theme-freedesktop   # capturas
     curl jq libarchive                                             # clima
     ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji papirus-icon-theme librsvg   # fuentes e íconos
-    imagemagick                                                    # paleta desde tu fondo de pantalla
+    imagemagick fastfetch                                                    # paleta desde tu fondo · bienvenida de la terminal
     thunar gvfs tumbler                                            # archivos
     base-devel git                                                 # para el AUR
   )
@@ -246,6 +247,17 @@ for t in "$SRC"/rice-plantillas/*.tpl; do
   instalar "rice-plantillas/$(basename "$t")" "$CFG/rice-plantillas/$(basename "$t")"
 done
 ok "Plantillas de colores → ~/.config/rice-plantillas  (puedes agregar las tuyas ahí)"
+
+# bienvenida de la terminal (logo + datos + tu paleta al abrir una terminal)
+instalar terminal/bienvenida.zsh "$CFG/rice-terminal/bienvenida.zsh"
+ok "Bienvenida de la terminal → ~/.config/rice-terminal"
+if [[ -f "$HOME/.zshrc" ]] && ! grep -q 'rice-terminal/bienvenida.zsh' "$HOME/.zshrc"; then
+  if preguntar "¿Muestro logo, datos y tu paleta al abrir la terminal? (agrega 1 línea al inicio de ~/.zshrc; respaldo: ~/.zshrc.pre-zero)"; then
+    cp -a "$HOME/.zshrc" "$HOME/.zshrc.pre-zero"
+    sed -i '1i source "$HOME/.config/rice-terminal/bienvenida.zsh"   # zero-rice: bienvenida de la terminal (quita esta línea si no la quieres)' "$HOME/.zshrc"
+    ok "Agregué la bienvenida al inicio de ~/.zshrc  (cámbiala con: bienvenida info | saludo | off)"
+  fi
+fi
 
 instalar ags/app.tsx   "$CFG/ags/app.tsx"
 instalar ags/style.css "$CFG/ags/style.css"

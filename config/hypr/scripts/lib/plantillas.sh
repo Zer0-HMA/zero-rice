@@ -15,8 +15,10 @@
 #             {{acento.a30}} → #7593af4d  (30 % de opacidad, estilo rofi)
 #             {{acento.rgba30}} → rgba(117, 147, 175, 0.30)   (estilo CSS)
 #             {{acento.hypr}} → rgba(7593afff)   ·   {{acento.hypr67}} → rgba(7593afaa)
+#             {{acento.ansi}} → 38;2;117;147;175   (color de texto para la terminal: \e[38;2;…m)  ·  {{acento.ansibg}} → 48;2;…
 #   Colores:  fondo fondo2 tenue texto acento acento2 sobre inactivo rojo verde amarillo azul
 #             magenta cyan medio sombra root_fondo root_texto root_borde term_fondo term_texto
+#             term_acento term_acento2 term_tenue   (los mismos, pero legibles sobre el fondo de la terminal)
 #             ansi0 … ansi15
 #   Texto:    id nombre modo (oscuro|claro)
 
@@ -37,6 +39,8 @@ valor_token() {
   case "$f" in
     hex) REPLY=${c#\#}; return 0 ;;
     rgb) REPLY=$(rgb "$c"); return 0 ;;
+    ansi)   REPLY=$(rgb "$c"); REPLY="38;2;${REPLY//, /;}"; return 0 ;;   # texto de color en la terminal
+    ansibg) REPLY=$(rgb "$c"); REPLY="48;2;${REPLY//, /;}"; return 0 ;;   # fondo de color en la terminal
   esac
   if [[ "$f" =~ ^(a|rgba|hypr)([0-9]{1,3})?$ ]]; then
     kind=${BASH_REMATCH[1]}; pct=${BASH_REMATCH[2]}
