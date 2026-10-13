@@ -1,7 +1,7 @@
 # ZERO — rice para Hyprland
 
 [![Revisar](https://github.com/Zer0-HMA/zero-rice/actions/workflows/revisar.yml/badge.svg)](https://github.com/Zer0-HMA/zero-rice/actions/workflows/revisar.yml)
-![Versión](https://img.shields.io/badge/versión-0.6.0-blue)
+![Versión](https://img.shields.io/badge/versión-0.7.0-blue)
 ![Arch Linux](https://img.shields.io/badge/Arch_Linux-1793D1?logo=archlinux&logoColor=white)
 ![Hyprland](https://img.shields.io/badge/Hyprland-Lua-58E1FF)
 [![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-green)](LICENSE)

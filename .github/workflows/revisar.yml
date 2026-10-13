@@ -62,3 +62,14 @@ jobs:
               [[ "$c" =~ ^#[0-9a-fA-F]{6}$ ]] || { echo "Paleta '$id': color inválido '$c'"; exit 1; }
             done
           done
+
+      - name: Versión coherente (VERSION, CHANGELOG, README y tag)
+        run: |
+          v=$(tr -d '[:space:]' < VERSION)
+          [[ $v =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "VERSION inválida: $v"; exit 1; }
+          grep -q "^## \[$v\]" CHANGELOG.md || { echo "CHANGELOG.md no tiene la entrada [$v]"; exit 1; }
+          grep -q "badge/versión-$v-" README.md || { echo "La insignia de README.md no dice $v"; exit 1; }
+          grep -q "badge/version-$v-" README.en.md || { echo "La insignia de README.en.md no dice $v"; exit 1; }
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            [[ ${GITHUB_REF#refs/tags/v} == "$v" ]] || { echo "El tag ${GITHUB_REF#refs/tags/} no coincide con VERSION ($v)"; exit 1; }
+          fi

@@ -2,6 +2,15 @@
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones siguen [SemVer](https://semver.org/lang/es/).
 
+## [Sin publicar]
+
+## [0.7.0] — 2026-10-13
+
+### Cambios
+- New_version_gg
+
+**Comparativa con 0.6.0:** 5 archivos (2 nuevos, 3 modificados), +1066 −28 líneas.
+
 ## [0.6.0] — 2026-10-12
 
 ### Agregado
@@ -138,3 +147,6 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y l
 
 ## [0.0.1]
 - Primera versión.
+
+[Sin publicar]: https://github.com/Zer0-HMA/zero-rice/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/Zer0-HMA/zero-rice/compare/v0.6.0...v0.7.0
